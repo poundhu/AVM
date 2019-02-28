@@ -28,15 +28,12 @@ import org.aion.vm.api.interfaces.KernelInterface;
 import org.aion.vm.api.interfaces.SimpleFuture;
 import org.aion.vm.api.interfaces.TransactionContext;
 import org.aion.vm.api.interfaces.TransactionResult;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.aion.avm.internal.RuntimeAssertionError.unexpected;
 
 
 public class AvmImpl implements AvmInternal {
 
-    private static final Logger logger = LoggerFactory.getLogger(AvmImpl.class);
 
     private final IInstrumentationFactory instrumentationFactory;
     private final IExternalCapabilities capabilities;
@@ -323,14 +320,6 @@ public class AvmImpl implements AvmInternal {
     }
 
     private AvmTransactionResult commonInvoke(KernelInterface parentKernel, TransactionTask task, TransactionContext ctx) {
-        if (logger.isDebugEnabled()) {
-            logger.debug("Transaction: address = {}, caller = {}, value = {}, data = {}, energyLimit = {}",
-                    ctx.getDestinationAddress(),
-                    ctx.getSenderAddress(),
-                    ctx.getTransferValue(),
-                    Helpers.bytesToHexString(ctx.getTransactionData()),
-                    ctx.getTransaction().getEnergyLimit());
-        }
         // We expect that the GC transactions are handled specially, within the caller.
         RuntimeAssertionError.assertTrue(ctx.getTransactionKind() != Type.GARBAGE_COLLECT.toInt());
 
@@ -405,7 +394,6 @@ public class AvmImpl implements AvmInternal {
             ctx.getSideEffects().markAllInternalTransactionsAsRejected();
         }
 
-        logger.debug("Result: {}", result);
         return result;
     }
 

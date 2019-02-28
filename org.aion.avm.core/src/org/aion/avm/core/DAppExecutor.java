@@ -12,13 +12,11 @@ import org.aion.parallel.TransactionTask;
 import org.aion.types.Address;
 import org.aion.vm.api.interfaces.KernelInterface;
 import org.aion.vm.api.interfaces.TransactionContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 
 
 public class DAppExecutor {
 
-    private static final Logger logger = LoggerFactory.getLogger(DAppExecutor.class);
 
     public static void call(IExternalCapabilities capabilities, KernelInterface kernel, AvmInternal avm, LoadedDApp dapp,
                             ReentrantDAppStack.ReentrantState stateToResume, TransactionTask task,
@@ -134,7 +132,6 @@ public class DAppExecutor {
             result.setResultCode(AvmTransactionResult.Code.FAILED_EXCEPTION);
             result.setEnergyUsed(ctx.getTransaction().getEnergyLimit());
             result.setUncaughtException(e.getCause());
-            logger.debug("Uncaught exception", e.getCause());
         } catch (AvmException e) {
             // We handle the generic AvmException as some failure within the contract.
             if (null != reentrantGraphData) {

@@ -43,14 +43,12 @@ import org.aion.vm.api.interfaces.KernelInterface;
 import org.aion.vm.api.interfaces.TransactionContext;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 
 import java.util.*;
 
 
 public class DAppCreator {
-    private static final Logger logger = LoggerFactory.getLogger(DAppExecutor.class);
 
     /**
      * Returns the sizes of all the user-space classes
@@ -301,7 +299,6 @@ public class DAppCreator {
             result.setEnergyUsed(ctx.getTransaction().getEnergyLimit());
 
             result.setUncaughtException(e.getCause());
-            logger.debug("Uncaught exception", e.getCause());
         } catch (RejectedClassException e) {
             if (verboseErrors) {
                 System.err.println("DApp deployment REJECTED with reason: \"" + e.getMessage() + "\"");
