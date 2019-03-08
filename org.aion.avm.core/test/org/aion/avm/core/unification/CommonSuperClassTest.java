@@ -38,6 +38,7 @@ public class CommonSuperClassTest {
     @Before
     public void setup() {
         AvmConfiguration config = new AvmConfiguration();
+        config.enableVerboseContractErrors = true;
         avm = CommonAvmFactory.buildAvmInstanceForConfiguration(new EmptyCapabilities(), config);
     }
 
@@ -58,9 +59,7 @@ public class CommonSuperClassTest {
         
         Transaction deployment = Transaction.create(DEPLOYER, KERNEL.getNonce(DEPLOYER), BigInteger.ZERO, txData, ENERGY_LIMIT, ENERGY_PRICE);
         TransactionResult deploymentResult = avm.run(KERNEL, new TransactionContext[] {TransactionContextImpl.forExternalTransaction(deployment, BLOCK)})[0].get();
-        // TODO (issue-362): Change this to expect SUCCESS once we fix this bug (VerifyError):
-        // -interfaces implicitly descend from shadow.Object in ParentPointers but interfaces cannot descend from a concrete type other than java.lang.Object.
-        Assert.assertEquals(AvmTransactionResult.Code.FAILED_EXCEPTION, deploymentResult.getResultCode());
+        Assert.assertEquals(AvmTransactionResult.Code.SUCCESS, deploymentResult.getResultCode());
     }
 
     @Test
@@ -105,6 +104,17 @@ public class CommonSuperClassTest {
     @Test
     public void combineWithExceptions() {
         byte[] jar = JarBuilder.buildJarForMainAndClasses(CommonSuperClassTarget_combineWithExceptions.class);
+        byte[] arguments = new byte[0];
+        byte[] txData = new CodeAndArguments(jar, arguments).encodeToBytes();
+        
+        Transaction deployment = Transaction.create(DEPLOYER, KERNEL.getNonce(DEPLOYER), BigInteger.ZERO, txData, ENERGY_LIMIT, ENERGY_PRICE);
+        TransactionResult deploymentResult = avm.run(KERNEL, new TransactionContext[] {TransactionContextImpl.forExternalTransaction(deployment, BLOCK)})[0].get();
+        Assert.assertEquals(AvmTransactionResult.Code.SUCCESS, deploymentResult.getResultCode());
+    }
+
+    @Test
+    public void combineArrays() {
+        byte[] jar = JarBuilder.buildJarForMainAndClasses(CommonSuperClassTarget_combineArrays.class, CommonSuperClassTypes.class);
         byte[] arguments = new byte[0];
         byte[] txData = new CodeAndArguments(jar, arguments).encodeToBytes();
         

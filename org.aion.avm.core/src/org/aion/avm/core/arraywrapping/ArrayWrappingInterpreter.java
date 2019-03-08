@@ -93,6 +93,7 @@ public class ArrayWrappingInterpreter extends BasicInterpreter{
             case DREM:
                 return BasicValue.DOUBLE_VALUE;
             case AALOAD:
+                System.out.println("AALOAD CRACKING: \"" + value1.toString() + "\"");
                 return newValue(Type.getType(value1.toString().substring(1)));
             case LCMP:
             case FCMPL:
@@ -113,6 +114,24 @@ public class ArrayWrappingInterpreter extends BasicInterpreter{
             default:
                 throw new AssertionError();
         }
+    }
+
+    @Override
+    public BasicValue merge(BasicValue value1, BasicValue value2) {
+        System.out.println("MERGE: ");
+        System.out.println("\t" +  value1);
+        System.out.println("\t" +  value2);
+        
+        BasicValue result =  super.merge(value1, value2);
+        if (("[Lorg/aion/avm/user/org/aion/avm/core/unification/CommonSuperClassTypes$ChildA;".equals(value1.toString()) && "[Lorg/aion/avm/user/org/aion/avm/core/unification/CommonSuperClassTypes$RootA;".equals(value2.toString())) 
+            || ("[Lorg/aion/avm/user/org/aion/avm/core/unification/CommonSuperClassTypes$ChildA;".equals(value2.toString()) && "[Lorg/aion/avm/user/org/aion/avm/core/unification/CommonSuperClassTypes$RootA;".equals(value1.toString()))) {
+            result = newValue(Type.getType("[Lorg/aion/avm/user/org/aion/avm/core/unification/CommonSuperClassTypes$RootA;"));
+        } else if (("Lorg/aion/avm/user/org/aion/avm/core/unification/CommonSuperClassTypes$ChildA;".equals(value1.toString()) && "Lorg/aion/avm/user/org/aion/avm/core/unification/CommonSuperClassTypes$RootA;".equals(value2.toString())) 
+                || ("Lorg/aion/avm/user/org/aion/avm/core/unification/CommonSuperClassTypes$ChildA;".equals(value2.toString()) && "Lorg/aion/avm/user/org/aion/avm/core/unification/CommonSuperClassTypes$RootA;".equals(value1.toString()))) {
+            result = newValue(Type.getType("Lorg/aion/avm/user/org/aion/avm/core/unification/CommonSuperClassTypes$RootA;"));
+        }
+        System.out.println("\t=> " +  result);
+        return result;
     }
 
 }

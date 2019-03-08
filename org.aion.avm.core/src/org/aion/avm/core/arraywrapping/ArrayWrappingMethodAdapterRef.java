@@ -51,6 +51,15 @@ class ArrayWrappingMethodAdapterRef extends MethodNode implements Opcodes {
 
     @Override
     public void visitEnd(){
+        System.out.println("VISIT END: " + this.name);
+        AbstractInsnNode[] insns = instructions.toArray();
+        for(int i = 0; i < insns.length; i++) {
+            AbstractInsnNode insn = insns[i];
+            System.out.println(" " + i + ": " + insn);
+            if (insn instanceof MethodInsnNode) {
+                System.out.println("  method: " + ((MethodInsnNode)insn).name);
+            }
+        }
 
         Frame<BasicValue>[] frames = null;
         if (instructions.size() > 0) {
@@ -61,10 +70,10 @@ class ArrayWrappingMethodAdapterRef extends MethodNode implements Opcodes {
             }catch (AnalyzerException e){
                 System.out.println("Analyzer fail :" + this.className);
                 System.out.println(e.getMessage());
+                throw RuntimeAssertionError.unexpected(e);
             }
         }
 
-        AbstractInsnNode[] insns = instructions.toArray();
 
         if (null != insns && null != frames) {
             RuntimeAssertionError.assertTrue(insns.length == frames.length);
