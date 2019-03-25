@@ -30,6 +30,21 @@ public class TypeAwareClassWriter extends ClassWriter {
         // NOTE:  The types we are receiving and returning here use slash-style names.
         String commonRoot = null;
         
+        // A hack to demonstrate the pattern we need to follow.
+        String classRoot = "org/aion/avm/arraywrapper/interface/_Lorg/aion/avm/user/org/aion/avm/core/unification/CommonSuperClassTypes$ClassRoot";
+        String classChild = "org/aion/avm/arraywrapper/interface/_Lorg/aion/avm/user/org/aion/avm/core/unification/CommonSuperClassTypes$ClassChild";
+        String interfaceRoot = "org/aion/avm/arraywrapper/interface/_Lorg/aion/avm/user/org/aion/avm/core/unification/CommonSuperClassTypes$RootA";
+        String interfaceChild = "org/aion/avm/arraywrapper/interface/_Lorg/aion/avm/user/org/aion/avm/core/unification/CommonSuperClassTypes$ChildA";
+        if ((classRoot.equals(type1) && classChild.equals(type2))
+                || (classChild.equals(type1) && classRoot.equals(type2))
+                ) {
+            return classRoot;
+        }
+        if ((interfaceRoot.equals(type1) && interfaceChild.equals(type2))
+                || (interfaceChild.equals(type1) && interfaceRoot.equals(type2))
+                ) {
+            return interfaceRoot;
+        }
         // TODO (issue-176): Generalize this interface handling instead of just using this IObject special-case.
         if (IOBJECT_SLASH_NAME.equals(type1) || IOBJECT_SLASH_NAME.equals(type2)) {
             commonRoot = IOBJECT_SLASH_NAME;

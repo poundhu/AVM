@@ -112,4 +112,26 @@ public class CommonSuperClassTest {
         TransactionResult deploymentResult = avm.run(KERNEL, new TransactionContext[] {TransactionContextImpl.forExternalTransaction(deployment, BLOCK)})[0].get();
         Assert.assertEquals(AvmTransactionResult.Code.SUCCESS, deploymentResult.getResultCode());
     }
+
+    @Test
+    public void combineArraysOfClasses() {
+        byte[] jar = JarBuilder.buildJarForMainAndClasses(CommonSuperClassTarget_combineArraysOfClasses.class, CommonSuperClassTypes.class);
+        byte[] arguments = new byte[0];
+        byte[] txData = new CodeAndArguments(jar, arguments).encodeToBytes();
+        
+        Transaction deployment = Transaction.create(DEPLOYER, KERNEL.getNonce(DEPLOYER), BigInteger.ZERO, txData, ENERGY_LIMIT, ENERGY_PRICE);
+        TransactionResult deploymentResult = avm.run(KERNEL, new TransactionContext[] {TransactionContextImpl.forExternalTransaction(deployment, BLOCK)})[0].get();
+        Assert.assertEquals(AvmTransactionResult.Code.SUCCESS, deploymentResult.getResultCode());
+    }
+
+    @Test
+    public void combineArraysOfInterfaces() {
+        byte[] jar = JarBuilder.buildJarForMainAndClasses(CommonSuperClassTarget_combineArraysOfInterfaces.class, CommonSuperClassTypes.class);
+        byte[] arguments = new byte[0];
+        byte[] txData = new CodeAndArguments(jar, arguments).encodeToBytes();
+        
+        Transaction deployment = Transaction.create(DEPLOYER, KERNEL.getNonce(DEPLOYER), BigInteger.ZERO, txData, ENERGY_LIMIT, ENERGY_PRICE);
+        TransactionResult deploymentResult = avm.run(KERNEL, new TransactionContext[] {TransactionContextImpl.forExternalTransaction(deployment, BLOCK)})[0].get();
+        Assert.assertEquals(AvmTransactionResult.Code.SUCCESS, deploymentResult.getResultCode());
+    }
 }

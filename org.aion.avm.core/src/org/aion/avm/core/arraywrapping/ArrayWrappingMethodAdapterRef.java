@@ -59,8 +59,9 @@ class ArrayWrappingMethodAdapterRef extends MethodNode implements Opcodes {
                 analyzer.analyze(this.className, this);
                 frames = analyzer.getFrames();
             }catch (AnalyzerException e){
-                System.out.println("Analyzer fail :" + this.className);
-                System.out.println(e.getMessage());
+                // If we fail to run the analyzer, that is a serious internal error.
+                // NOTE:  We can limit this failure to the contract deployment to avoid DDoS against the AVM in the network.
+                throw RuntimeAssertionError.unexpected(e);
             }
         }
 

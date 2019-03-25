@@ -115,4 +115,33 @@ public class ArrayWrappingInterpreter extends BasicInterpreter{
         }
     }
 
+    @Override
+    public BasicValue merge(BasicValue value1, BasicValue value2) {
+        // A hack to demonstrate the pattern we need to solve.
+        String classChild = "Lorg/aion/avm/user/org/aion/avm/core/unification/CommonSuperClassTypes$ClassChild;";
+        String classRoot = "Lorg/aion/avm/user/org/aion/avm/core/unification/CommonSuperClassTypes$ClassRoot;";
+        String classChildA = "[" + classChild;
+        String classRootA = "[" + classRoot;
+        String interfaceChild = "Lorg/aion/avm/user/org/aion/avm/core/unification/CommonSuperClassTypes$ChildA;";
+        String interfaceRoot = "Lorg/aion/avm/user/org/aion/avm/core/unification/CommonSuperClassTypes$RootA;";
+        String interfaceChildA = "[" + interfaceChild;
+        String interfaceRootA = "[" + interfaceRoot;
+        
+        BasicValue result =  super.merge(value1, value2);
+        if ((classChildA.equals(value1.toString()) && classRootA.equals(value2.toString())) 
+            || (classChildA.equals(value2.toString()) && classRootA.equals(value1.toString()))) {
+            result = newValue(Type.getType(classRootA));
+        } else if ((classChild.equals(value1.toString()) && classRoot.equals(value2.toString())) 
+                || (classChild.equals(value2.toString()) && classRoot.equals(value1.toString()))) {
+            result = newValue(Type.getType(classRoot));
+        } else if ((interfaceChildA.equals(value1.toString()) && interfaceRootA.equals(value2.toString())) 
+                || (interfaceChildA.equals(value2.toString()) && interfaceRootA.equals(value1.toString()))) {
+            result = newValue(Type.getType(interfaceRootA));
+        } else if ((interfaceChild.equals(value1.toString()) && interfaceRoot.equals(value2.toString())) 
+                || (interfaceChild.equals(value2.toString()) && interfaceRoot.equals(value1.toString()))) {
+            result = newValue(Type.getType(interfaceRoot));
+        }
+        return result;
+    }
+
 }

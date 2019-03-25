@@ -20,4 +20,11 @@ public class CommonSuperClassTypes {
     public static interface ChildB extends RootA, RootB {
         String getChildB();
     }
+
+    public static abstract class ClassRoot {
+        public abstract String getClassRoot();
+    }
+
+    public static abstract class ClassChild extends ClassRoot {
+    }
 }
