@@ -22,4 +22,5 @@ module org.aion.avm.rt {
     opens org.aion.avm.shadow.java.lang;
     opens org.aion.avm.shadowapi.org.aion.avm.api;
     opens org.aion.avm.internal;
+    exports org.aion.avm.shadow.java.io;
 }

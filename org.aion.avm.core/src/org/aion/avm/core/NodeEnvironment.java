@@ -122,6 +122,8 @@ public class NodeEnvironment {
                     , org.aion.avm.shadow.java.util.function.Function.class
 
                     , org.aion.avm.shadow.java.util.concurrent.TimeUnit.class
+
+                    , org.aion.avm.shadow.java.io.Serializable.class
             };
 
             this.jclClassNames = new HashSet<>();
