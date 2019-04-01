@@ -4,6 +4,7 @@ import org.aion.avm.api.Address;
 import org.aion.avm.arraywrapper.ByteArray;
 import org.aion.avm.core.classloading.AvmClassLoader;
 import org.aion.avm.core.miscvisitors.NamespaceMapper;
+import org.aion.avm.core.types.ClassHierarchy;
 import org.aion.avm.core.types.ClassInfo;
 import org.aion.avm.core.types.Forest;
 import org.aion.avm.core.util.Helpers;
@@ -317,7 +318,7 @@ public class HashCodeTest {
 
     private byte[] getTransformedTestClass(String className) {
         byte[] raw = Helpers.loadRequiredResourceAsBytes(className.replaceAll("\\.", "/") + ".class");
-        Forest<String, ClassInfo> classHierarchy = new HierarchyTreeBuilder()
+        ClassHierarchy<String, ClassInfo> classHierarchy = new HierarchyTreeBuilder()
                 .addClass(className, "java.lang.Object", false, raw)
                 .asMutableForest();
 

@@ -1,6 +1,7 @@
 package org.aion.avm.core;
 
 import java.util.IdentityHashMap;
+import org.aion.avm.core.types.ClassHierarchy;
 import org.aion.avm.core.types.ClassInfo;
 import org.aion.avm.internal.CommonInstrumentation;
 import org.aion.avm.internal.IBlockchainRuntime;
@@ -45,7 +46,7 @@ public class SimpleAvm {
                 throw RuntimeAssertionError.unexpected(ex);
             }
         });
-       Forest<String, ClassInfo> classHierarchy = builder.asMutableForest();
+       ClassHierarchy<String, ClassInfo> classHierarchy = builder.asMutableForest();
 
         // transform classes
         Map<String, byte[]> transformedClasses = DAppCreator.transformClasses(preTransformedClassBytecode, classHierarchy, preserveDebuggability);

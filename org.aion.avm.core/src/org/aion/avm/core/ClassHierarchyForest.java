@@ -1,8 +1,11 @@
 package org.aion.avm.core;
 
 import org.aion.avm.core.dappreading.LoadedJar;
+import org.aion.avm.core.types.ClassHierarchyNode;
+import org.aion.avm.core.types.ClassHierarchyVisitorAdapter;
 import org.aion.avm.core.types.ClassInfo;
 import org.aion.avm.core.types.Forest;
+import org.aion.avm.core.types.Node;
 import org.aion.avm.core.types.Pair;
 import org.objectweb.asm.Attribute;
 import org.objectweb.asm.ClassReader;
@@ -122,7 +125,7 @@ public final class ClassHierarchyForest extends Forest<String, ClassInfo> {
         }
     }
 
-    private static final class FlatMapCollector extends VisitorAdapter<String, ClassInfo> {
+    private static final class FlatMapCollector extends ClassHierarchyVisitorAdapter<String, ClassInfo> {
         private final Map<String, ClassInfo> map;
 
         private FlatMapCollector(int size) {
@@ -130,7 +133,7 @@ public final class ClassHierarchyForest extends Forest<String, ClassInfo> {
         }
 
         @Override
-        public void onVisitNotRootNode(Node<String, ClassInfo> node) {
+        public void onVisitNotRootNode(ClassHierarchyNode<String, ClassInfo> node) {
             map.put(node.getId(), node.getContent());
         }
 

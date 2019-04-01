@@ -1,8 +1,11 @@
 package org.aion.avm.core.instrument;
 
+import org.aion.avm.core.types.ClassHierarchy;
+import org.aion.avm.core.types.ClassHierarchyNode;
+import org.aion.avm.core.types.ClassHierarchyVisitor;
 import org.aion.avm.core.types.ClassInfo;
 import org.aion.avm.core.types.Forest;
-import org.aion.avm.core.types.Forest.Node;
+import org.aion.avm.core.types.Node;
 import org.aion.avm.core.util.DescriptorParser;
 import org.aion.avm.core.util.Helpers;
 import org.objectweb.asm.ClassReader;
@@ -201,24 +204,24 @@ public class HeapMemoryCostCalculator {
      * @param classHierarchy the pre-constructed class hierarchy forest
      * @param rootClassObjectSizes the pre-constructed map of the runtime and java.lang.* classes to their instance size
      */
-    public void calcClassesInstanceSize(Forest<String, ClassInfo> classHierarchy, Map<String, Integer> rootClassObjectSizes) {
+    public void calcClassesInstanceSize(ClassHierarchy<String, ClassInfo> classHierarchy, Map<String, Integer> rootClassObjectSizes) {
         // get the root nodes list of the class hierarchy
-        Collection<Node<String, ClassInfo>> rootClasses = classHierarchy.getRoots();
+        Collection<ClassHierarchyNode<String, ClassInfo>> rootClasses = classHierarchy.getRoots();
 
         // calculate for each tree in the class hierarchy
-        for (Node<String, ClassInfo> rootClass : rootClasses) {
+        for (ClassHierarchyNode<String, ClassInfo> rootClass : rootClasses) {
             // 'rootClassObjectSizes' map already has the root class object size.
             // copy rootClass size to classHeapSizeMap
             final String splashName = Helpers.fulllyQualifiedNameToInternalName(rootClass.getId());
             classHeapSizeMap.put(splashName, rootClassObjectSizes.get(splashName));
         }
-        final var visitor = new Forest.Visitor<String, ClassInfo>() {
+        final var visitor = new ClassHierarchyVisitor<String, ClassInfo>() {
             @Override
-            public void onVisitRoot(Node<String, ClassInfo> root) {
+            public void onVisitRoot(ClassHierarchyNode<String, ClassInfo> root) {
             }
 
             @Override
-            public void onVisitNotRootNode(Node<String, ClassInfo> node) {
+            public void onVisitNotRootNode(ClassHierarchyNode<String, ClassInfo> node) {
                 calcInstanceSizeOfOneClass(node.getContent().getBytes());
             }
 

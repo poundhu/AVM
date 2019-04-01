@@ -4,8 +4,10 @@ import org.aion.avm.core.classgeneration.CommonGenerators;
 import org.aion.avm.core.classloading.AvmClassLoader;
 import org.aion.avm.core.classloading.AvmSharedClassLoader;
 import org.aion.avm.core.dappreading.LoadedJar;
+import org.aion.avm.core.types.ClassHierarchyNode;
 import org.aion.avm.core.types.ClassInfo;
 import org.aion.avm.core.types.Forest;
+import org.aion.avm.core.types.Node;
 import org.aion.avm.core.util.Helpers;
 import org.aion.avm.internal.*;
 
@@ -452,7 +454,7 @@ public class NodeEnvironment {
             // If the RT jar being something we can't process, our installation is clearly corrupt.
             throw RuntimeAssertionError.unexpected(e);
         }
-        List<Forest.Node<String, ClassInfo>> newRoots = new ArrayList<>();
+        List<ClassHierarchyNode<String, ClassInfo>> newRoots = new ArrayList<>();
         newRoots.add(rtClassesForest.getNodeById("java.lang.Object"));
         newRoots.add(rtClassesForest.getNodeById("java.lang.Throwable"));
         rtClassesForest.prune(newRoots);
@@ -470,8 +472,8 @@ public class NodeEnvironment {
                     parentClass = generatedShadowJDK.get(parentName);
                 }
                 // TODO: figure out the name of the grandparent class
-                rtClassesForest.add(new Forest.Node<>(parentName, new ClassInfo(false, parentClass)),
-                        new Forest.Node<>(generatedClassName, new ClassInfo(false, generatedShadowJDK.get(generatedClassName))));
+                rtClassesForest.add(new Node<>(parentName, new ClassInfo(false, parentClass)),
+                        new Node<>(generatedClassName, new ClassInfo(false, generatedShadowJDK.get(generatedClassName))));
             }
         }
 

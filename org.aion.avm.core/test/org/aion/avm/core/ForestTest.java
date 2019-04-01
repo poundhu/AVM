@@ -1,6 +1,9 @@
 package org.aion.avm.core;
 
+import org.aion.avm.core.types.ClassHierarchyNode;
+import org.aion.avm.core.types.ClassHierarchyVisitor;
 import org.aion.avm.core.types.Forest;
+import org.aion.avm.core.types.Node;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -153,18 +156,18 @@ public class ForestTest {
         }
     }
 
-    private static Forest.Node<String, byte[]> newNode(String id) {
-        return new Forest.Node<>(id, null);
+    private static ClassHierarchyNode<String, byte[]> newNode(String id) {
+        return new Node<>(id, null);
     }
 
-    private static class TestVisitor implements Forest.Visitor<String, byte[]> {
+    private static class TestVisitor implements ClassHierarchyVisitor<String, byte[]> {
         private final Collection<String> visitedRoots = new ArrayList<>();
         private final Collection<String> pathsFromRoot = new ArrayList<>();
 
         private StringBuilder curPath;
 
         @Override
-        public void onVisitRoot(Forest.Node<String, byte[]> root) {
+        public void onVisitRoot(ClassHierarchyNode<String, byte[]> root) {
             visitedRoots.add(root.getId());
             if (curPath != null) {
                 pathsFromRoot.add(curPath.toString());
@@ -174,7 +177,7 @@ public class ForestTest {
         }
 
         @Override
-        public void onVisitNotRootNode(Forest.Node<String, byte[]> node) {
+        public void onVisitNotRootNode(ClassHierarchyNode<String, byte[]> node) {
             curPath.append(node.getId());
         }
 

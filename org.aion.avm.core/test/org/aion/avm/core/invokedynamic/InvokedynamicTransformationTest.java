@@ -16,6 +16,7 @@ import org.aion.avm.core.shadowing.InvokedynamicShadower;
 import org.aion.avm.core.stacktracking.StackWatcherClassAdapter;
 import org.aion.avm.core.testindy.java.lang.Double;
 import org.aion.avm.core.testindy.java.lang.invoke.LambdaMetafactory;
+import org.aion.avm.core.types.ClassHierarchy;
 import org.aion.avm.core.types.ClassInfo;
 import org.aion.avm.core.types.Forest;
 import org.aion.avm.core.types.GeneratedClassConsumer;
@@ -78,7 +79,7 @@ public class InvokedynamicTransformationTest {
     }
 
     private byte[] transformForParametrizedLambdaTest(byte[] origBytecode, String className) {
-        final Forest<String, ClassInfo> classHierarchy = new HierarchyTreeBuilder()
+        final ClassHierarchy<String, ClassInfo> classHierarchy = new HierarchyTreeBuilder()
                 .addClass(className, "java.lang.Object", false, origBytecode)
                 .asMutableForest();
         final var shadowPackage = "org/aion/avm/core/testindy/";
@@ -105,7 +106,7 @@ public class InvokedynamicTransformationTest {
     }
 
     private byte[] transformForMethodReference(byte[] originalBytecode, String classDotName) {
-        final Forest<String, ClassInfo> classHierarchy = new HierarchyTreeBuilder()
+        final ClassHierarchy<String, ClassInfo> classHierarchy = new HierarchyTreeBuilder()
                 .addClass(classDotName, "java.lang.Object", false, originalBytecode)
                 .asMutableForest();
         final var shadowPackage = "org/aion/avm/core/testindy/";
@@ -132,7 +133,7 @@ public class InvokedynamicTransformationTest {
     }
 
     private byte[] transformForMultiLineLambda(byte[] origBytecode, String className) {
-        final Forest<String, ClassInfo> classHierarchy = new HierarchyTreeBuilder()
+        final ClassHierarchy<String, ClassInfo> classHierarchy = new HierarchyTreeBuilder()
                 .addClass(className, "java.lang.Object", false, origBytecode)
                 .asMutableForest();
         final var shadowPackage = PackageConstants.kShadowSlashPrefix;

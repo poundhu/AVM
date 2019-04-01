@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.Set;
 
 import org.aion.avm.core.exceptionwrapping.ExceptionWrapperNameMapper;
+import org.aion.avm.core.types.ClassHierarchy;
 import org.aion.avm.core.types.ClassInfo;
 import org.aion.avm.core.types.Forest;
 import org.aion.avm.internal.PackageConstants;
@@ -67,7 +68,7 @@ public class TypeAwareClassWriterTest {
 
 
     private static class TestClass extends TypeAwareClassWriter {
-        public TestClass(Set<String> userDefinedClassNames, Forest<String, ClassInfo> classHierarchy) {
+        public TestClass(Set<String> userDefinedClassNames, ClassHierarchy<String, ClassInfo> classHierarchy) {
             super(0, new ParentPointers(userDefinedClassNames, classHierarchy, false));
         }
         public TestClass() {

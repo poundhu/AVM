@@ -7,6 +7,7 @@ import org.aion.avm.core.miscvisitors.NamespaceMapper;
 import org.aion.avm.core.miscvisitors.UserClassMappingVisitor;
 import org.aion.avm.core.shadowing.ClassShadowing;
 import org.aion.avm.core.shadowing.InvokedynamicShadower;
+import org.aion.avm.core.types.ClassHierarchy;
 import org.aion.avm.core.types.ClassInfo;
 import org.aion.avm.core.types.Forest;
 import org.aion.avm.core.util.DebugNameResolver;
@@ -133,7 +134,7 @@ public class StringConcatenationTest {
     }
 
     private static byte[] transformForStringConcatTest(byte[] origBytecode, String className) {
-        final Forest<String, ClassInfo> classHierarchy = new HierarchyTreeBuilder()
+        final ClassHierarchy<String, ClassInfo> classHierarchy = new HierarchyTreeBuilder()
                 .addClass(className, "java.lang.Object", false, origBytecode)
                 .asMutableForest();
         final var shadowPackage = PackageConstants.kShadowSlashPrefix;
