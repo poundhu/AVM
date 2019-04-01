@@ -18,9 +18,9 @@ public class TypeAwareClassWriter extends ClassWriter {
     // Note that we handle the wrapper of shadow "java.lang.Throwable" as a special-case, since that one is our manually-implemented root.
     private static final Class<?> WRAPPER_ROOT_THROWABLE = org.aion.avm.exceptionwrapper.org.aion.avm.shadow.java.lang.Throwable.class;
 
-    private final ParentPointers staticClassHierarchy;
+    private final IParentPointers staticClassHierarchy;
 
-    public TypeAwareClassWriter(int flags, ParentPointers parentClassResolver) {
+    public TypeAwareClassWriter(int flags, IParentPointers parentClassResolver) {
         super(flags);
         this.staticClassHierarchy = parentClassResolver;
     }
@@ -77,7 +77,7 @@ public class TypeAwareClassWriter extends ClassWriter {
             // The manual throwable wrapper should be asked for its superclass, directly, instead of inferring it from the underlying type.
             String superDotName = isThrowableWrapper
                     ? WRAPPER_ROOT_THROWABLE.getSuperclass().getName()
-                    : this.staticClassHierarchy.getSuperClassName(nextDotType);
+                    : this.staticClassHierarchy.getTightestSuperClassName(nextDotType);
             if (null == superDotName) {
                 superDotName = getSuperAsJdkType(nextDotType);
             }

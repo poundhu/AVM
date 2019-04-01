@@ -1,7 +1,7 @@
 package org.aion.avm.core.exceptionwrapping;
 
 import org.aion.avm.core.ClassToolchain;
-import org.aion.avm.core.ParentPointers;
+import org.aion.avm.core.IParentPointers;
 import org.aion.avm.core.classgeneration.StubGenerator;
 import org.aion.avm.core.types.GeneratedClassConsumer;
 import org.aion.avm.internal.Helper;
@@ -23,10 +23,10 @@ public class ExceptionWrapping extends ClassToolchain.ToolChainClassVisitor {
      */
     private static final String SYSTEM_EXCEPTION_DETECTION_PREFIX = "java/lang/";
 
-    private final ParentPointers pointers;
+    private final IParentPointers pointers;
     private final GeneratedClassConsumer generatedClassesSink;
 
-    public ExceptionWrapping(ParentPointers parentClassResolver, GeneratedClassConsumer generatedClassesSink) {
+    public ExceptionWrapping(IParentPointers parentClassResolver, GeneratedClassConsumer generatedClassesSink) {
         super(Opcodes.ASM6);
         this.pointers = parentClassResolver;
         this.generatedClassesSink = generatedClassesSink;
@@ -47,7 +47,7 @@ public class ExceptionWrapping extends ClassToolchain.ToolChainClassVisitor {
                 isThrowable = true;
             } else {
                 // We assume that we can only descend from objects already in the ClassHierarchyForest or in "java/lang".
-                String superClass = this.pointers.getSuperClassName(thisClass);
+                String superClass = this.pointers.getTightestSuperClassName(thisClass);
                 if (null == superClass) {
                     // We will try to load this from the default class loader and ask its parent.
                     // (we can only land outside if we fell into the java.lang package, which is a problem we should have filtered, earlier)

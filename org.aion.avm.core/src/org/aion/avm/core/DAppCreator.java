@@ -99,7 +99,7 @@ public class DAppCreator {
         
         // Note:  preRenameUserDefinedClasses includes ONLY classes while preRenameUserClassAndInterfaceSet includes classes AND interfaces.
         Set<String> preRenameUserDefinedClasses = ClassWhiteList.extractDeclaredClasses(preRenameClassHierarchy);
-        ParentPointers parentClassResolver = new ParentPointers(preRenameUserDefinedClasses, preRenameClassHierarchy, preserveDebuggability);
+        IParentPointers parentClassResolver = new ParentPointers(preRenameUserDefinedClasses, preRenameClassHierarchy, preserveDebuggability);
         
         // We need to run our rejection filter and static rename pass.
         Map<String, byte[]> safeClasses = rejectionAndRenameInputClasses(inputClasses, preRenameUserDefinedClasses, parentClassResolver, preserveDebuggability);
@@ -372,7 +372,7 @@ public class DAppCreator {
     }
 
 
-    private static Map<String, byte[]> rejectionAndRenameInputClasses(Map<String, byte[]> inputClasses, Set<String> preRenameUserDefinedClasses, ParentPointers parentClassResolver, boolean preserveDebuggability) {
+    private static Map<String, byte[]> rejectionAndRenameInputClasses(Map<String, byte[]> inputClasses, Set<String> preRenameUserDefinedClasses, IParentPointers parentClassResolver, boolean preserveDebuggability) {
         Map<String, byte[]> safeClasses = new HashMap<>();
         Set<String> preRenameUserClassAndInterfaceSet = inputClasses.keySet();
         PreRenameClassAccessRules preRenameClassAccessRules = new PreRenameClassAccessRules(preRenameUserDefinedClasses, preRenameUserClassAndInterfaceSet);

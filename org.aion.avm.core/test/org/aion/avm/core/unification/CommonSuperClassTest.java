@@ -202,4 +202,27 @@ public class CommonSuperClassTest {
         // Should be rejected because of VerifyError for ambiguous classes ????????
         Assert.assertEquals(AvmTransactionResult.Code.SUCCESS, deploymentResult.getResultCode());
     }
+
+
+    @Test
+    public void watchClassHierarchy() {
+        byte[] jar = JarBuilder.buildJarForMainAndClasses(UnificationSample.class, AionBuffer.class);
+        byte[] arguments = new byte[0];
+        byte[] txData = new CodeAndArguments(jar, arguments).encodeToBytes();
+
+        Transaction deployment = Transaction.create(DEPLOYER, KERNEL.getNonce(DEPLOYER), BigInteger.ZERO, txData, ENERGY_LIMIT, ENERGY_PRICE);
+        TransactionResult deploymentResult = avm.run(KERNEL, new TransactionContext[] {TransactionContextImpl.forExternalTransaction(deployment, BLOCK)})[0].get();
+        Assert.assertEquals(AvmTransactionResult.Code.SUCCESS, deploymentResult.getResultCode());
+    }
+
+    @Test
+    public void watchArrayClassHierarchy() {
+        byte[] jar = JarBuilder.buildJarForMainAndClasses(UnificationArraySample.class, AionBuffer.class);
+        byte[] arguments = new byte[0];
+        byte[] txData = new CodeAndArguments(jar, arguments).encodeToBytes();
+
+        Transaction deployment = Transaction.create(DEPLOYER, KERNEL.getNonce(DEPLOYER), BigInteger.ZERO, txData, ENERGY_LIMIT, ENERGY_PRICE);
+        TransactionResult deploymentResult = avm.run(KERNEL, new TransactionContext[] {TransactionContextImpl.forExternalTransaction(deployment, BLOCK)})[0].get();
+        Assert.assertEquals(AvmTransactionResult.Code.SUCCESS, deploymentResult.getResultCode());
+    }
 }

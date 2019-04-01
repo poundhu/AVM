@@ -19,7 +19,7 @@ import org.aion.avm.internal.RuntimeAssertionError;
  * of the data.
  * NOTE:  The class names here are the ".-style"
  */
-public class ParentPointers {
+public class ParentPointers implements IParentPointers {
     private final Map<String, String> postRenameParentMap;
 
     public ParentPointers(Set<String> userDefinedClassNames, ClassHierarchy<String, ClassInfo> classHierarchy, boolean preserveDebuggability) {
@@ -41,7 +41,8 @@ public class ParentPointers {
         this.postRenameParentMap = mapping;
     }
 
-    public String getSuperClassName(String className) {
+    @Override
+    public String getTightestSuperClassName(String className) {
         // NOTE:  These are ".-style" names.
         RuntimeAssertionError.assertTrue(-1 == className.indexOf("/"));
         return this.postRenameParentMap.get(className);
