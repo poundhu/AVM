@@ -1,15 +1,21 @@
 package org.aion.avm.core.arraywrapping;
 
 import org.aion.avm.core.ClassToolchain;
+import org.aion.avm.core.types.PocClassHierarchy;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
 public class ArrayWrappingClassAdapterRef extends ClassToolchain.ToolChainClassVisitor {
+    private final PocClassHierarchy hierarchy;
+    private final boolean preserveDebuggability;
 
     public String className;
 
-    public ArrayWrappingClassAdapterRef() {
+    public ArrayWrappingClassAdapterRef(PocClassHierarchy hierarchy, boolean preserveDebuggability) {
         super(Opcodes.ASM6);
+
+        this.hierarchy = hierarchy;
+        this.preserveDebuggability = preserveDebuggability;
     }
 
     @Override
@@ -27,6 +33,6 @@ public class ArrayWrappingClassAdapterRef extends ClassToolchain.ToolChainClassV
 
         MethodVisitor mv = super.visitMethod(access, name, descriptor, signature, exceptions);
 
-        return new ArrayWrappingMethodAdapterRef(access, name, descriptor, signature, exceptions, mv, className);
+        return new ArrayWrappingMethodAdapterRef(access, name, descriptor, signature, exceptions, mv, className, this.hierarchy, this.preserveDebuggability);
     }
 }

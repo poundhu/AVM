@@ -2,6 +2,7 @@ package org.aion.avm.core.arraywrapping;
 
 import org.aion.avm.arraywrapper.BooleanArray;
 import org.aion.avm.arraywrapper.ByteArray;
+import org.aion.avm.core.types.PocClassHierarchy;
 import org.aion.avm.core.util.Helpers;
 import org.aion.avm.internal.IObjectArray;
 import org.aion.avm.internal.RuntimeAssertionError;
@@ -32,6 +33,8 @@ import org.objectweb.asm.tree.analysis.Frame;
  */
 
 class ArrayWrappingMethodAdapterRef extends MethodNode implements Opcodes {
+    private final PocClassHierarchy hierarchy;
+    private final boolean preserveDebuggability;
 
     private String className;
     private MethodVisitor mv;
@@ -42,11 +45,15 @@ class ArrayWrappingMethodAdapterRef extends MethodNode implements Opcodes {
                                          final String signature,
                                          final String[] exceptions,
                                          MethodVisitor mv,
-                                         String className)
+                                         String className,
+                                         PocClassHierarchy hierarchy,
+                                         boolean preserveDebuggability)
     {
         super(Opcodes.ASM6, access, name, descriptor, signature, exceptions);
         this.className = className;
         this.mv = mv;
+        this.hierarchy = hierarchy;
+        this.preserveDebuggability = preserveDebuggability;
     }
 
     @Override
@@ -55,7 +62,7 @@ class ArrayWrappingMethodAdapterRef extends MethodNode implements Opcodes {
         Frame<BasicValue>[] frames = null;
         if (instructions.size() > 0) {
             try{
-                Analyzer<BasicValue> analyzer = new Analyzer<>(new ArrayWrappingInterpreter());
+                Analyzer<BasicValue> analyzer = new Analyzer<>(new ArrayWrappingInterpreter(this.hierarchy, this.preserveDebuggability));
                 analyzer.analyze(this.className, this);
                 frames = analyzer.getFrames();
             }catch (AnalyzerException e){

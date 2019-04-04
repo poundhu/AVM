@@ -49,7 +49,7 @@ public class SimpleAvm {
        ClassHierarchy<String, ClassInfo> classHierarchy = builder.asMutableForest();
 
         // transform classes
-        Map<String, byte[]> transformedClasses = DAppCreator.transformClasses(preTransformedClassBytecode, classHierarchy, preserveDebuggability);
+        Map<String, byte[]> transformedClasses = DAppCreator.transformClasses(preTransformedClassBytecode, classHierarchy, preserveDebuggability, null);
         Map<String, byte[]> finalContractClasses = Helpers.mapIncludingHelperBytecode(transformedClasses, Helpers.loadDefaultHelperBytecode());
         this.loader = NodeEnvironment.singleton.createInvocationClassLoader(finalContractClasses);
         this.transformedClassNames = Collections.unmodifiableSet(transformedClasses.keySet());

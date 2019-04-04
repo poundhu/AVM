@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
+import org.aion.avm.ClassNameExtractor;
 import org.aion.avm.core.dappreading.LoadedJar;
 import org.aion.avm.internal.RuntimeAssertionError;
 import org.objectweb.asm.ClassReader;
@@ -18,6 +19,7 @@ public final class PocClassHierarchy {
     public final boolean isPreRenameHierarchy;
     private final PocDecoratedNode root;
     private Map<String, PocDecoratedNode> nameToNodeMapping;
+    private Set<String> userDefinedClasses;
 
     private PocClassHierarchy(boolean isPreRenameHierarchy) {
         this.isPreRenameHierarchy = isPreRenameHierarchy;
@@ -33,23 +35,25 @@ public final class PocClassHierarchy {
 
         } else {
 
-            // In this case we have IObject as a child of java/lang/Object and nothing else in the hierarchy.
+            // In this case we have IObject as a child of java/lang/Object and java/lang/Throwable (for exception wrappers) under java/lang/Object
             PocHierarchyNode shadowIObjectNode = PocHierarchyNode.shadowIObjectNode();
-
             PocHierarchyNode shadowObjectNode = PocHierarchyNode.shadowObjectNode();
+            PocHierarchyNode javaLangThrowable = PocHierarchyNode.javaLangThrowable();
 
             // Set up the parent-child pointers between the object types.
             shadowIObjectNode.addParent(javaLangObjectNode);
             javaLangObjectNode.addChild(shadowIObjectNode);
-
             shadowObjectNode.addParent(shadowIObjectNode);
             shadowIObjectNode.addChild(shadowObjectNode);
+            javaLangObjectNode.addChild(javaLangThrowable);
+            javaLangThrowable.addParent(javaLangObjectNode);
 
             // Set the root and add the object types to the map.
             this.root = PocDecoratedNode.decorate(javaLangObjectNode);
             this.nameToNodeMapping.put(this.root.getQualifiedName(), this.root);
             this.nameToNodeMapping.put(shadowIObjectNode.getQualifiedName(), PocDecoratedNode.decorate(shadowIObjectNode));
             this.nameToNodeMapping.put(shadowObjectNode.getQualifiedName(), PocDecoratedNode.decorate(shadowObjectNode));
+            this.nameToNodeMapping.put(javaLangThrowable.getQualifiedName(), PocDecoratedNode.decorate(javaLangThrowable));
         }
     }
 
@@ -121,10 +125,12 @@ public final class PocClassHierarchy {
         return createPostRenameHierarchyFromPostRenameNames(classInfos);
     }
 
-    public void appendJarOfPreRenameClasses(LoadedJar loadedJar) {
+    public void appendJarOfPreRenameUserDefinedClasses(LoadedJar loadedJar, boolean preserveDebuggability) {
         if (loadedJar == null) {
             throw new NullPointerException("Cannot create hierarchy from null jar.");
         }
+
+        Set<PocClassInfo> classInfos = new HashSet<>();
 
         Map<String, byte[]> classNameToBytes = loadedJar.classBytesByQualifiedNames;
         for (Entry<String, byte[]> classNameToBytesEntry : classNameToBytes.entrySet()) {
@@ -133,9 +139,54 @@ public final class PocClassHierarchy {
 
             // Do not re-add java/lang/Object.
             if (!className.equals(PocClassInfo.JAVA_LANG_OBJECT)) {
-                add(getClassInfo(classNameToBytesEntry.getValue(), true).toPostRenameClassInfo());
+
+                if (preserveDebuggability) {
+                    classInfos.add(getClassInfo(classNameToBytesEntry.getValue(), false));
+
+                } else {
+                    add(getClassInfo(classNameToBytesEntry.getValue(), true).toPostRenameClassInfo());
+                }
             }
 
+        }
+
+        // Some extra work is required if debuggability is preserved.
+        if (preserveDebuggability) {
+
+            // Construct a set of all the user-defined classes.
+            this.userDefinedClasses = new HashSet<>();
+            for (PocClassInfo classInfo : classInfos) {
+                this.userDefinedClasses.add(classInfo.selfQualifiedName);
+            }
+
+            // If any of our user-defined classes subclass a non-user-defined class, we have to rename the parent.
+            Set<PocClassInfo> authoritativeUserDefinedClassSet = new HashSet<>();
+            for (PocClassInfo classInfo : classInfos) {
+
+                String superClass = classInfo.parentQualifiedName;
+                String[] superInterfaces = classInfo.getInterfaces();
+
+                if (superClass != null) {
+                    superClass = !this.userDefinedClasses.contains(superClass) ? PocClassInfo.renameAny(superClass) : superClass;
+                }
+
+                if (superInterfaces != null) {
+                    for (int i = 0; i < superInterfaces.length; i++) {
+                        superInterfaces[i] = !this.userDefinedClasses.contains(superInterfaces[i]) ? PocClassInfo.rename(superInterfaces[i]) : superInterfaces[i];
+                    }
+                }
+
+                if (classInfo.isInterface && (superInterfaces == null)) {
+                    authoritativeUserDefinedClassSet.add(PocClassInfo.postRenameInfoFor(classInfo.isInterface, classInfo.isFinalClass, classInfo.selfQualifiedName, superClass, new String[]{ PocClassInfo.SHADOW_IOBJECT }));
+                } else {
+                    authoritativeUserDefinedClassSet.add(PocClassInfo.postRenameInfoFor(classInfo.isInterface, classInfo.isFinalClass, classInfo.selfQualifiedName, superClass, superInterfaces));
+                }
+            }
+
+            // Finally, now we can add these classes to the hierarchy.
+            for (PocClassInfo authoritativeUserDefinedClass : authoritativeUserDefinedClassSet) {
+                add(authoritativeUserDefinedClass);
+            }
         }
     }
 
@@ -151,6 +202,22 @@ public final class PocClassHierarchy {
         }
 
         return classHierarchy;
+    }
+
+    /**
+     * Returns {@code true} only if className is an interface.
+     */
+    public boolean isInterface(String className) {
+        RuntimeAssertionError.assertTrue(this.nameToNodeMapping.containsKey(className));
+        return this.nameToNodeMapping.get(className).getClassInfo().isInterface;
+    }
+
+    /**
+     * Returns {@code true} only if className is a user-defined class.
+     */
+    public boolean isUserDefinedClass(String className) {
+        RuntimeAssertionError.assertTrue(this.userDefinedClasses != null);
+        return this.userDefinedClasses.contains(className);
     }
 
     /**
@@ -198,6 +265,12 @@ public final class PocClassHierarchy {
         // If these nodes have no super class in common something is very wrong.
         RuntimeAssertionError.assertTrue(!leafNodes.isEmpty());
 
+        // This is our heuristic for now unless we can prove to ourself this worse than failing out.
+        if (leafNodes.size() > 1) {
+            System.err.println("Ambiguous unification (returned IObject) -- '" + ClassNameExtractor.getOriginalClassName(class1) + "' and '" + ClassNameExtractor.getOriginalClassName(class2));
+            return PocClassInfo.SHADOW_IOBJECT;
+        }
+
         return (leafNodes.size() == 1) ? leafNodes.iterator().next().selfQualifiedName : null;
     }
 
@@ -226,10 +299,10 @@ public final class PocClassHierarchy {
 
         for (PocClassInfo classInfo : classInfos) {
 
-            // Don't ever re-add java/lang/Object to the hierarchy, nor shadow Object / IObject for post-renaming.
+            // Don't ever re-add java/lang/Object to the hierarchy, nor the following for post-renaming: shadow Object, IObject, java/lang/Throwable.
             if (!classInfo.isJavaLangObject()) {
 
-                if (this.isPreRenameHierarchy || (!classInfo.isShadowIObject() && !classInfo.isShadowObject())) {
+                if (this.isPreRenameHierarchy || (!classInfo.isShadowIObject() && !classInfo.isShadowObject() && !classInfo.isJavaLangThrowable())) {
                     deepCopy.add(classInfo);
                 }
 

@@ -10,11 +10,14 @@ import org.aion.avm.userlib.AionList;
 
 public class CommonSuperClassTarget_combineWithEnums {
 
-    private enum EmptyEnum1 {}
+    private enum EmptyEnum1 { ME1 }
 
-    private enum EmptyEnum2 {}
+    private enum EmptyEnum2 { ME2 }
 
     public static byte[] main() {
+        String string = combineDifferentEnums(true, EmptyEnum1.ME1, EmptyEnum2.ME2);
+        BlockchainRuntime.println(string + " -> " + string.getClass().getName());
+
         return null;
     }
 

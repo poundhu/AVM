@@ -1,8 +1,11 @@
 package org.aion.avm.core.unification;
 
+import java.io.Serializable;
 import java.util.Iterator;
 import java.util.List;
 import org.aion.avm.api.Address;
+import org.aion.avm.api.BlockchainRuntime;
+import org.aion.avm.core.unification.CommonSuperClassTypes.EnumA1;
 import org.aion.avm.core.unification.CommonSuperClassTypes.RootA;
 import org.aion.avm.core.unification.CommonSuperClassTypes.RootB;
 import org.aion.avm.core.unification.CommonSuperClassTypes.SubRootA1;
@@ -16,6 +19,26 @@ public class CommonSuperClassTarget_combineWithInterfaces {
 
     // The associated test only checks that deployment succeeds, so main() can return null
     public static byte[] main() {
+        boolean flag = true;
+
+        Object o = combineInterfaceWithException2(flag, EnumA1.ME, new EmptyException());
+
+        // Calling the getName because in the background it prints out the real type, just quicker than javap to verify these things.
+        String reportedDappName = CommonSuperClassTarget_combineWithInterfaces.class.getName();
+        String reportedObjectName = o.getClass().getName();
+
+        BlockchainRuntime.println("Dapp: " + reportedDappName);
+        BlockchainRuntime.println("Object: " + reportedObjectName);
+        BlockchainRuntime.println("Object.toString(): " + o.toString());
+
+        if (flag) {
+            EnumA1 b = (EnumA1) o;
+            BlockchainRuntime.println("EnumA1.toString(): " + b.toString());
+        } else {
+            EmptyException ex = (EmptyException) o;
+            BlockchainRuntime.println("EmptyException.toString(): " + ex.toString());
+        }
+
         return null;
     }
 
@@ -39,6 +62,50 @@ public class CommonSuperClassTarget_combineWithInterfaces {
         return flag ? a : b;
     }
 
+    public static String combineA(boolean flag, int[] a, byte[] b) {
+        return (flag ? a : b).toString();
+    }
+
+    public static int[] combineB(boolean flag, int[] a, int[] b) {
+        return flag ? a : b;
+    }
+
+    public static String combineA(boolean flag, int[][] a, byte[][] b) {
+        return (flag ? a : b).toString();
+    }
+
+    public static int[][][] combineB(boolean flag, int[][][] a, int[][][] b) {
+        return flag ? a : b;
+    }
+
+    public static Object combineC(boolean flag, int[] a, int[][][] b) {
+        return flag ? a : b;
+    }
+
+    public static Object combineD(boolean flag, int[] a, byte[][][] b) {
+        return flag ? a : b;
+    }
+
+    public static String combineE(boolean flag, Integer[] a, Byte[] b) {
+        return (flag ? a : b).toString();
+    }
+
+    public static Object combineF(boolean flag, Comparable[] a, Serializable[] b) {
+        return flag ? a : b;
+    }
+
+    public static Object combineG(boolean flag, Comparable[] a, Serializable[][] b) {
+        return flag ? a : b;
+    }
+
+    public static Object combineH(boolean flag, SubRootA1[] a, SubRootA2[] b) {
+        return flag ? a : b;
+    }
+
+    public static String combineI(boolean flag, int[][] a, Serializable[][][] b) {
+        return (flag ? a : b).toString();
+    }
+
     public static RootA[] combineInterfaceWithArrays1(boolean flag, SubSubRootA1[] a, SubRootA2[] b) {
         return flag ? a : b;
     }
@@ -47,8 +114,20 @@ public class CommonSuperClassTarget_combineWithInterfaces {
         return (flag ? a : b).toString();
     }
 
-    public static Object combineInterfaceWithException(boolean flag, RootA a, EmptyException[] b) {
+    public static Object combineInterfaceWithException1(boolean flag, RootA a, EmptyException[] b) {
         return flag ? a : b[0];
+    }
+
+    public static Object combineInterfaceWithException2(boolean flag, RootA a, EmptyException b) {
+        Object isNull = null;
+
+        try {
+            isNull.toString();
+        } catch (NullPointerException e) {
+            BlockchainRuntime.println("CAUGHT NULL!");
+        }
+
+        return flag ? a : b;
     }
 
     public static String combineInterfaceWithEnum(boolean flag, RootB a, EmptyEnum b) {
@@ -63,7 +142,7 @@ public class CommonSuperClassTarget_combineWithInterfaces {
         return (flag ? a : b).toString();
     }
 
-    private static abstract class EmptyException extends RuntimeException {
+    private static class EmptyException extends RuntimeException {
         private static final long serialVersionUID = 1L;
     }
 }

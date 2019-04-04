@@ -11,6 +11,9 @@ public final class PocClassInfo {
     public static final String JAVA_LANG_OBJECT = "java.lang.Object";
     public static final String SHADOW_IOBJECT = PackageConstants.kInternalDotPrefix + "IObject";
     public static final String SHADOW_OBJECT = PackageConstants.kShadowDotPrefix + JAVA_LANG_OBJECT;
+    public static final String SHADOW_IOBJECT_ARRAY = PackageConstants.kInternalDotPrefix + "IObjectArray";
+
+    public static final String JAVA_LANG_THROWABLE = "java.lang.Throwable";
 
     public static final String SHADOW_ENUM = "org.aion.avm.shadow.java.lang.Enum";
     public static final String SHADOW_COMPARABLE = "org.aion.avm.shadow.java.lang.Comparable";
@@ -60,6 +63,10 @@ public final class PocClassInfo {
 
     public static PocClassInfo infoForJavaLangObject() {
         return new PocClassInfo(true, false, false, JAVA_LANG_OBJECT, null, null);
+    }
+
+    public static PocClassInfo infoForJavaLangThrowable() {
+        return new PocClassInfo(true, false, false, JAVA_LANG_THROWABLE, JAVA_LANG_OBJECT, null);
     }
 
     public static PocClassInfo infoForShadowIObject() {
@@ -156,8 +163,12 @@ public final class PocClassInfo {
         return this.selfQualifiedName.equals(SHADOW_OBJECT);
     }
 
+    public boolean isJavaLangThrowable() {
+        return this.selfQualifiedName.equalsIgnoreCase(JAVA_LANG_THROWABLE);
+    }
+
     public String[] getInterfaces() {
-        return Arrays.copyOf(this.parentInterfaces, this.parentInterfaces.length);
+        return (this.parentInterfaces == null) ? null : Arrays.copyOf(this.parentInterfaces, this.parentInterfaces.length);
     }
 
     @Override
@@ -269,19 +280,47 @@ public final class PocClassInfo {
         return renamedInterfaces;
     }
 
-    private String rename(String name) {
+    /**
+     * Returns name, even if it is java/lang/Object or Throwable -> both will become shadow names.
+     */
+    public static String renameAny(String name) {
         if (name == null) {
             return null;
         } else if (name.equals(JAVA_LANG_OBJECT)) {
-            // Java/lang/Object is the only object that does not undergo re-naming.
-            return JAVA_LANG_OBJECT;
-        } else if (name.startsWith("java.lang.")) {
+            return SHADOW_OBJECT;
+        } else if (name.equals(JAVA_LANG_THROWABLE)) {
+            return SHADOW_THROWABLE;
+        } else if (isJclClass(name)) {
             return PackageConstants.kShadowDotPrefix + name;
         } else if (name.startsWith(PackageConstants.kPublicApiDotPrefix)) {
             return PackageConstants.kShadowApiDotPrefix + name;
         } else {
             return PackageConstants.kUserDotPrefix + name;
         }
+    }
+
+    /**
+     * Renames name, unless it is java/lang/Object or Throwable -> both will stay the same.
+     */
+    public static String rename(String name) {
+        // Note: java/lang/Object & Throwable don't get renamed, they are part of the hierarchy.
+        if (name == null) {
+            return null;
+        } else if (name.equals(JAVA_LANG_OBJECT)) {
+            return JAVA_LANG_OBJECT;
+        } else if (name.equals(JAVA_LANG_THROWABLE)) {
+            return JAVA_LANG_THROWABLE;
+        } else if (isJclClass(name)) {
+            return PackageConstants.kShadowDotPrefix + name;
+        } else if (name.startsWith(PackageConstants.kPublicApiDotPrefix)) {
+            return PackageConstants.kShadowApiDotPrefix + name;
+        } else {
+            return PackageConstants.kUserDotPrefix + name;
+        }
+    }
+
+    private static boolean isJclClass(String name) {
+        return name.startsWith("java.io") || name.startsWith("java.lang") || name.startsWith("java.math") || name.startsWith("java.util");
     }
 
 }

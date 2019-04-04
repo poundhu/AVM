@@ -32,6 +32,7 @@ import org.aion.avm.core.types.ClassInfo;
 import org.aion.avm.core.types.Forest;
 import org.aion.avm.core.types.GeneratedClassConsumer;
 import org.aion.avm.core.types.ImmortalDappModule;
+import org.aion.avm.core.types.PocClassHierarchy;
 import org.aion.avm.core.types.RawDappModule;
 import org.aion.avm.core.types.TransformedDappModule;
 import org.aion.avm.core.util.CodeAndArguments;
@@ -92,7 +93,7 @@ public class DAppCreator {
      * @param preRenameClassHierarchy The pre-rename hierarchy of user-defined classes in the DApp (/-style).
      * @return the transformed classes and any generated classes (names specified in .-style)
      */
-    public static Map<String, byte[]> transformClasses(Map<String, byte[]> inputClasses, ClassHierarchy<String, ClassInfo> preRenameClassHierarchy, boolean preserveDebuggability) {
+    public static Map<String, byte[]> transformClasses(Map<String, byte[]> inputClasses, ClassHierarchy<String, ClassInfo> preRenameClassHierarchy, boolean preserveDebuggability, PocClassHierarchy pocHierarchy) {
         // Before anything, pass the list of classes through the verifier.
         // (this will throw UncaughtException, on verification failure).
         Verifier.verifyUntrustedClasses(inputClasses);
@@ -102,7 +103,7 @@ public class DAppCreator {
         IParentPointers parentClassResolver = new ParentPointers(preRenameUserDefinedClasses, preRenameClassHierarchy, preserveDebuggability);
         
         // We need to run our rejection filter and static rename pass.
-        Map<String, byte[]> safeClasses = rejectionAndRenameInputClasses(inputClasses, preRenameUserDefinedClasses, parentClassResolver, preserveDebuggability);
+        Map<String, byte[]> safeClasses = rejectionAndRenameInputClasses(inputClasses, preRenameUserDefinedClasses, parentClassResolver, preserveDebuggability, pocHierarchy);
         
         // merge the generated classes and processed classes, assuming the package spaces do not conflict.
         Map<String, byte[]> processedClasses = new HashMap<>();
@@ -127,24 +128,32 @@ public class DAppCreator {
             // We also add SKIP_DEBUG since we aren't using debug data and skipping it removes extraneous labels which would otherwise
             // cause the BlockBuildingMethodVisitor to build lots of small blocks instead of a few big ones (each block incurs a Helper
             // static call, which is somewhat expensive - this is how we bill for energy).
-            byte[] bytecode = new ClassToolchain.Builder(safeClasses.get(name), parsingOptions)
-                    .addNextVisitor(new ConstantVisitor())
-                    .addNextVisitor(new ClassMetering(postRenameObjectSizes))
-                    .addNextVisitor(new InvokedynamicShadower(PackageConstants.kShadowSlashPrefix))
-                    .addNextVisitor(new ClassShadowing(PackageConstants.kShadowSlashPrefix))
-                    .addNextVisitor(new StackWatcherClassAdapter())
-                    .addNextVisitor(new ExceptionWrapping(parentClassResolver, generatedClassesSink))
-                    .addNextVisitor(new AutomaticGraphVisitor())
-                    .addNextVisitor(new StrictFPVisitor())
-                    .addWriter(new TypeAwareClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS, parentClassResolver))
-                    .build()
-                    .runAndGetBytecode();
-            bytecode = new ClassToolchain.Builder(bytecode, parsingOptions)
-                    .addNextVisitor(new ArrayWrappingClassAdapterRef())
-                    .addNextVisitor(new ArrayWrappingClassAdapter())
-                    .addWriter(new TypeAwareClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS, parentClassResolver))
-                    .build()
-                    .runAndGetBytecode();
+            ClassToolchain.Builder builder = new ClassToolchain.Builder(safeClasses.get(name), parsingOptions)
+                .addNextVisitor(new ConstantVisitor())
+                .addNextVisitor(new ClassMetering(postRenameObjectSizes))
+                .addNextVisitor(new InvokedynamicShadower(PackageConstants.kShadowSlashPrefix))
+                .addNextVisitor(new ClassShadowing(PackageConstants.kShadowSlashPrefix))
+                .addNextVisitor(new StackWatcherClassAdapter())
+                .addNextVisitor(new ExceptionWrapping(parentClassResolver, generatedClassesSink))
+                .addNextVisitor(new AutomaticGraphVisitor())
+                .addNextVisitor(new StrictFPVisitor());
+
+            ClassToolchain.Builder.Creator creator = (pocHierarchy == null)
+                ? builder.addWriter(new TypeAwareClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS, parentClassResolver))
+                : builder.addWriter(new TypeAwareClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS, pocHierarchy, preserveDebuggability));
+
+            byte[] bytecode = creator.build().runAndGetBytecode();
+
+            builder = new ClassToolchain.Builder(bytecode, parsingOptions)
+                    .addNextVisitor(new ArrayWrappingClassAdapterRef(pocHierarchy, preserveDebuggability))
+                    .addNextVisitor(new ArrayWrappingClassAdapter());
+
+            creator = (pocHierarchy == null)
+                ? builder.addWriter(new TypeAwareClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS, parentClassResolver))
+                : builder.addWriter(new TypeAwareClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS, pocHierarchy, preserveDebuggability));
+
+
+            bytecode = creator.build().runAndGetBytecode();
             transformedClasses.put(name, bytecode);
         }
 
@@ -165,11 +174,14 @@ public class DAppCreator {
         });
         String javaLangObjectSlashName = PackageConstants.kShadowSlashPrefix + "java/lang/Object";
         for (String name : transformedClasses.keySet()) {
-            byte[] bytecode = new ClassToolchain.Builder(transformedClasses.get(name), parsingOptions)
-                    .addNextVisitor(new InterfaceFieldMappingVisitor(consumer, userInterfaceSlashNames, javaLangObjectSlashName))
-                    .addWriter(new TypeAwareClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS, parentClassResolver))
-                    .build()
-                    .runAndGetBytecode();
+            ClassToolchain.Builder builder = new ClassToolchain.Builder(transformedClasses.get(name), parsingOptions)
+                    .addNextVisitor(new InterfaceFieldMappingVisitor(consumer, userInterfaceSlashNames, javaLangObjectSlashName));
+
+            ClassToolchain.Builder.Creator creator = (pocHierarchy != null)
+                ? builder.addWriter(new TypeAwareClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS, pocHierarchy, preserveDebuggability))
+                : builder.addWriter(new TypeAwareClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS, parentClassResolver));
+
+            byte[] bytecode = creator.build().runAndGetBytecode();
             processedClasses.put(name, bytecode);
         }
 
@@ -192,7 +204,7 @@ public class DAppCreator {
                 return;
             }
 
-            RawDappModule rawDapp = RawDappModule.readFromJar(codeAndArguments.code);
+            RawDappModule rawDapp = RawDappModule.readFromJar(codeAndArguments.code, preserveDebuggability);
             if (rawDapp == null) {
                 if (verboseErrors) {
                     System.err.println("DApp deployment failed due to corrupt JAR data");
@@ -201,6 +213,8 @@ public class DAppCreator {
                 result.setEnergyUsed(ctx.getTransaction().getEnergyLimit());
                 return;
             }
+
+            Helpers.writeBytesToFile(codeAndArguments.code, "/home/nick/Desktop/preTransform.jar");
 
             // Verify that the DApp contains the main class they listed and that it has a "public static byte[] main()" method.
             if (!rawDapp.classes.containsKey(rawDapp.mainClass) || !MainMethodChecker.checkForMain(rawDapp.classes.get(rawDapp.mainClass))) {
@@ -215,7 +229,7 @@ public class DAppCreator {
             ClassHierarchyForest dappClassesForest = rawDapp.classHierarchyForest;
 
             // transform
-            Map<String, byte[]> transformedClasses = transformClasses(rawDapp.classes, dappClassesForest, preserveDebuggability);
+            Map<String, byte[]> transformedClasses = transformClasses(rawDapp.classes, dappClassesForest, preserveDebuggability, rawDapp.pocHierarchy);
             TransformedDappModule transformedDapp = TransformedDappModule.fromTransformedClasses(transformedClasses, rawDapp.mainClass);
 
             // We can now construct the abstraction of the loaded DApp which has the machinery for the rest of the initialization.
@@ -251,6 +265,8 @@ public class DAppCreator {
             // store transformed dapp
             byte[] immortalDappJar = immortalDapp.createJar(dappAddress, ctx);
             kernel.putCode(dappAddress, immortalDappJar);
+
+            Helpers.writeBytesToFile(immortalDappJar, "/home/nick/Desktop/immortalDapp.jar");
 
             // Force the classes in the dapp to initialize so that the <clinit> is run (since we already saved the version without).
             dapp.forceInitializeAllClasses();
@@ -372,7 +388,7 @@ public class DAppCreator {
     }
 
 
-    private static Map<String, byte[]> rejectionAndRenameInputClasses(Map<String, byte[]> inputClasses, Set<String> preRenameUserDefinedClasses, IParentPointers parentClassResolver, boolean preserveDebuggability) {
+    private static Map<String, byte[]> rejectionAndRenameInputClasses(Map<String, byte[]> inputClasses, Set<String> preRenameUserDefinedClasses, IParentPointers parentClassResolver, boolean preserveDebuggability, PocClassHierarchy pocHierarchy) {
         Map<String, byte[]> safeClasses = new HashMap<>();
         Set<String> preRenameUserClassAndInterfaceSet = inputClasses.keySet();
         PreRenameClassAccessRules preRenameClassAccessRules = new PreRenameClassAccessRules(preRenameUserDefinedClasses, preRenameUserClassAndInterfaceSet);
@@ -383,14 +399,17 @@ public class DAppCreator {
             RuntimeAssertionError.assertTrue(-1 == name.indexOf("/"));
 
             int parsingOptions = preserveDebuggability ? 0: ClassReader.SKIP_DEBUG;
-            byte[] bytecode = new ClassToolchain.Builder(inputClasses.get(name), parsingOptions)
+            ClassToolchain.Builder builder = new ClassToolchain.Builder(inputClasses.get(name), parsingOptions)
                     .addNextVisitor(new RejectionClassVisitor(preRenameClassAccessRules, namespaceMapper, preserveDebuggability))
                     .addNextVisitor(new LoopingExceptionStrippingVisitor())
-                    .addNextVisitor(new UserClassMappingVisitor(namespaceMapper, preserveDebuggability))
-                    // (note that we need to pass a bogus HierarchyTreeBuilder into the class writer - can be empty, but not null)
-                    .addWriter(new TypeAwareClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS, parentClassResolver))
-                    .build()
-                    .runAndGetBytecode();
+                    .addNextVisitor(new UserClassMappingVisitor(namespaceMapper, preserveDebuggability));
+
+            ClassToolchain.Builder.Creator creator = (pocHierarchy != null)
+                ? builder.addWriter(new TypeAwareClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS, pocHierarchy, preserveDebuggability))
+                : builder.addWriter(new TypeAwareClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS, parentClassResolver));
+
+            byte[] bytecode = creator.build().runAndGetBytecode();
+
             String mappedName = DebugNameResolver.getUserPackageDotPrefix(name, preserveDebuggability);
             safeClasses.put(mappedName, bytecode);
         }

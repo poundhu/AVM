@@ -36,6 +36,10 @@ public class PocHierarchyNode implements PocNode {
         return new PocHierarchyNode(PocClassInfo.infoForJavaLangObject());
     }
 
+    public static PocHierarchyNode javaLangThrowable() {
+        return new PocHierarchyNode(PocClassInfo.infoForJavaLangThrowable());
+    }
+
     public static PocHierarchyNode shadowIObjectNode() {
         return new PocHierarchyNode(PocClassInfo.infoForShadowIObject());
     }

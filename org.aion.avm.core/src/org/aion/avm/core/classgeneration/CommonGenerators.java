@@ -1,8 +1,14 @@
 package org.aion.avm.core.classgeneration;
 
+import java.nio.BufferOverflowException;
+import java.nio.BufferUnderflowException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
 import org.aion.avm.core.ClassToolchain;
@@ -12,6 +18,7 @@ import org.aion.avm.core.miscvisitors.NamespaceMapper;
 import org.aion.avm.core.miscvisitors.PreRenameClassAccessRules;
 import org.aion.avm.core.miscvisitors.UserClassMappingVisitor;
 import org.aion.avm.core.shadowing.ClassShadowing;
+import org.aion.avm.core.types.PocClassInfo;
 import org.aion.avm.core.util.Helpers;
 import org.aion.avm.internal.PackageConstants;
 import org.aion.avm.internal.RuntimeAssertionError;
@@ -80,6 +87,147 @@ public class CommonGenerators {
             "java.nio.BufferUnderflowException",
             "java.nio.BufferOverflowException"
     };
+
+    public enum JclException {
+        THROWABLE("java.lang.Throwable"),
+        ERROR("java.lang.Error"),
+        ASSERTION_ERROR("java.lang.AssertionError"),
+        LINKAGE_ERROR("java.lang.LinkageError"),
+        BOOTSTRAP_ERROR("java.lang.BootstrapMethodError"),
+        CIRCULARITY_ERROR("java.lang.ClassCircularityError"),
+        CLASS_FORMAT_ERROR("java.lang.ClassFormatError"),
+        UNSUPPORTED_VERSION_ERROR("java.lang.UnsupportedClassVersionError"),
+        INITIALIZER_ERROR("java.lang.ExceptionInInitializerError"),
+        INCOMPATIBLE_CHANGE_ERROR("java.lang.IncompatibleClassChangeError"),
+        ABSTRACT_METHOD_ERROR("java.lang.AbstractMethodError"),
+        ILLEGAL_ACCESS_ERROR("java.lang.IllegalAccessError"),
+        INSTANTIATION_ERROR("java.lang.InstantiationError"),
+        NO_SUCH_FIELD_ERROR("java.lang.NoSuchFieldError"),
+        NO_SUCH_METHOD_ERROR("java.lang.NoSuchMethodError"),
+        NO_CLASS_DEF_ERROR("java.lang.NoClassDefFoundError"),
+        UNSATISFIED_LINK_ERROR("java.lang.UnsatisfiedLinkError"),
+        VERIFY_ERROR("java.lang.VerifyError"),
+        THREAD_DEATH("java.lang.ThreadDeath"),
+        EXCEPTION("java.lang.Exception"),
+        CLONE_EXCEPTION("java.lang.CloneNotSupportedException"),
+        INTERRUPTED_EXCEPTION("java.lang.InterruptedException"),
+        REFLECTIVE_EXCEPTION("java.lang.ReflectiveOperationException"),
+        CLASS_NOT_FOUND_EXCEPTION("java.lang.ClassNotFoundException"),
+        ILLEGAL_ACCESS_EXCEPTION("java.lang.IllegalAccessException"),
+        INSTANTIATION_EXCEPTION("java.lang.InstantiationException"),
+        NO_SUCH_FIELD_EXCEPTION("java.lang.NoSuchFieldException"),
+        NO_SUCH_METHOD_EXCEPTION("java.lang.NoSuchMethodException"),
+        RUNTIME_EXCEPTION("java.lang.RuntimeException"),
+        ARITHMETIC_EXCEPTION("java.lang.ArithmeticException"),
+        ARRAY_STORE_EXCEPTION("java.lang.ArrayStoreException"),
+        CLASS_CAST_EXCEPTION("java.lang.ClassCastException"),
+        ENUM_CONSTANT_EXCEPTION("java.lang.EnumConstantNotPresentException"),
+        ILLEGAL_ARGUMENT_EXCEPTION("java.lang.IllegalArgumentException"),
+        ILLEGAL_THREAD_EXCEPTION("java.lang.IllegalThreadStateException"),
+        NUMBER_FORMAT_EXCEPTION("java.lang.NumberFormatException"),
+        ILLEGAL_CALLER_EXCEPTION("java.lang.IllegalCallerException"),
+        ILLEGAL_MONITOR_EXCEPTION("java.lang.IllegalMonitorStateException"),
+        ILLEGAL_STATE_EXCEPTION("java.lang.IllegalStateException"),
+        INDEX_BOUNDS_EXCEPTION("java.lang.IndexOutOfBoundsException"),
+        ARRAY_BOUNDS_EXCEPTION("java.lang.ArrayIndexOutOfBoundsException"),
+        STRING_BOUNDS_EXCEPTION("java.lang.StringIndexOutOfBoundsException"),
+        LAYER_INSTANTIATION_EXCEPTION("java.lang.LayerInstantiationException"),
+        NEGATIVE_ARRAY_SIZE_EXCEPTION("java.lang.NegativeArraySizeException"),
+        NULL_POINTER_EXCEPTION("java.lang.NullPointerException"),
+        SECURITY_EXCEPTION("java.lang.SecurityException"),
+        TYPE_NOT_PRESENT_EXCEPTION("java.lang.TypeNotPresentException"),
+        UNSUPPORTED_OPERATION_EXCEPTION("java.lang.UnsupportedOperationException"),
+        NO_SUCH_ELEMENT_EXCEPTION("java.util.NoSuchElementException"),
+        BUFFER_UNDERFLOW_EXCEPTION("java.nio.BufferUnderflowException"),
+        BUFFER_OVERFLOW_EXCEPTION("java.nio.BufferOverflowException");
+
+        private String name;
+
+        JclException(String name) {
+            this.name = name;
+        }
+
+        public String getQualifiedName() {
+            return this.name;
+        }
+
+        public String getShadowQualifiedName() {
+            return PackageConstants.kShadowDotPrefix + this.name;
+        }
+    }
+
+    public static Set<PocClassInfo> getAllShadowExceptionClassInfos() {
+        Set<PocClassInfo> classInfos = new HashSet<>();
+
+        //TODO: not all of these are in our shadow lib -- is this ok? (more than just the 'handwritten' ones listed below)
+
+//        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.THROWABLE.getShadowQualifiedName(), PocClassInfo.SHADOW_OBJECT, null));
+//        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.ERROR.getShadowQualifiedName(), JclException.THROWABLE.getShadowQualifiedName(), null));
+//        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.ASSERTION_ERROR.getShadowQualifiedName(), JclException.ERROR.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.LINKAGE_ERROR.getShadowQualifiedName(), JclException.ERROR.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.BOOTSTRAP_ERROR.getShadowQualifiedName(), JclException.LINKAGE_ERROR.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.CIRCULARITY_ERROR.getShadowQualifiedName(), JclException.LINKAGE_ERROR.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.CLASS_FORMAT_ERROR.getShadowQualifiedName(), JclException.LINKAGE_ERROR.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.UNSUPPORTED_VERSION_ERROR.getShadowQualifiedName(), JclException.CLASS_FORMAT_ERROR.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.INITIALIZER_ERROR.getShadowQualifiedName(), JclException.LINKAGE_ERROR.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.INCOMPATIBLE_CHANGE_ERROR.getShadowQualifiedName(), JclException.LINKAGE_ERROR.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.ABSTRACT_METHOD_ERROR.getShadowQualifiedName(), JclException.INCOMPATIBLE_CHANGE_ERROR.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.ILLEGAL_ACCESS_ERROR.getShadowQualifiedName(), JclException.INCOMPATIBLE_CHANGE_ERROR.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.INSTANTIATION_ERROR.getShadowQualifiedName(), JclException.INCOMPATIBLE_CHANGE_ERROR.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.NO_SUCH_FIELD_ERROR.getShadowQualifiedName(), JclException.INCOMPATIBLE_CHANGE_ERROR.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.NO_SUCH_METHOD_ERROR.getShadowQualifiedName(), JclException.INCOMPATIBLE_CHANGE_ERROR.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.NO_CLASS_DEF_ERROR.getShadowQualifiedName(), JclException.LINKAGE_ERROR.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.UNSATISFIED_LINK_ERROR.getShadowQualifiedName(), JclException.LINKAGE_ERROR.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.VERIFY_ERROR.getShadowQualifiedName(), JclException.LINKAGE_ERROR.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.THREAD_DEATH.getShadowQualifiedName(), JclException.ERROR.getShadowQualifiedName(), null));
+//        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.EXCEPTION.getShadowQualifiedName(), JclException.THROWABLE.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.CLONE_EXCEPTION.getShadowQualifiedName(), JclException.EXCEPTION.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.INTERRUPTED_EXCEPTION.getShadowQualifiedName(), JclException.EXCEPTION.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.REFLECTIVE_EXCEPTION.getShadowQualifiedName(), JclException.EXCEPTION.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.CLASS_NOT_FOUND_EXCEPTION.getShadowQualifiedName(), JclException.REFLECTIVE_EXCEPTION.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.ILLEGAL_ACCESS_EXCEPTION.getShadowQualifiedName(), JclException.REFLECTIVE_EXCEPTION.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.INSTANTIATION_EXCEPTION.getShadowQualifiedName(), JclException.REFLECTIVE_EXCEPTION.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.NO_SUCH_FIELD_EXCEPTION.getShadowQualifiedName(), JclException.REFLECTIVE_EXCEPTION.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.NO_SUCH_METHOD_EXCEPTION.getShadowQualifiedName(), JclException.REFLECTIVE_EXCEPTION.getShadowQualifiedName(), null));
+//        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.RUNTIME_EXCEPTION.getShadowQualifiedName(), JclException.EXCEPTION.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.ARITHMETIC_EXCEPTION.getShadowQualifiedName(), JclException.RUNTIME_EXCEPTION.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.ARRAY_STORE_EXCEPTION.getShadowQualifiedName(), JclException.RUNTIME_EXCEPTION.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.CLASS_CAST_EXCEPTION.getShadowQualifiedName(), JclException.RUNTIME_EXCEPTION.getShadowQualifiedName(), null));
+//        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.ENUM_CONSTANT_EXCEPTION.getShadowQualifiedName(), JclException.RUNTIME_EXCEPTION.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.ILLEGAL_ARGUMENT_EXCEPTION.getShadowQualifiedName(), JclException.RUNTIME_EXCEPTION.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.ILLEGAL_THREAD_EXCEPTION.getShadowQualifiedName(), JclException.ILLEGAL_ARGUMENT_EXCEPTION.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.NUMBER_FORMAT_EXCEPTION.getShadowQualifiedName(), JclException.ILLEGAL_ARGUMENT_EXCEPTION.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.ILLEGAL_CALLER_EXCEPTION.getShadowQualifiedName(), JclException.RUNTIME_EXCEPTION.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.ILLEGAL_MONITOR_EXCEPTION.getShadowQualifiedName(), JclException.RUNTIME_EXCEPTION.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.ILLEGAL_STATE_EXCEPTION.getShadowQualifiedName(), JclException.RUNTIME_EXCEPTION.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.INDEX_BOUNDS_EXCEPTION.getShadowQualifiedName(), JclException.RUNTIME_EXCEPTION.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.ARRAY_BOUNDS_EXCEPTION.getShadowQualifiedName(), JclException.INDEX_BOUNDS_EXCEPTION.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.STRING_BOUNDS_EXCEPTION.getShadowQualifiedName(), JclException.INDEX_BOUNDS_EXCEPTION.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.LAYER_INSTANTIATION_EXCEPTION.getShadowQualifiedName(), JclException.RUNTIME_EXCEPTION.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.NEGATIVE_ARRAY_SIZE_EXCEPTION.getShadowQualifiedName(), JclException.RUNTIME_EXCEPTION.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.NULL_POINTER_EXCEPTION.getShadowQualifiedName(), JclException.RUNTIME_EXCEPTION.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.SECURITY_EXCEPTION.getShadowQualifiedName(), JclException.RUNTIME_EXCEPTION.getShadowQualifiedName(), null));
+//        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.TYPE_NOT_PRESENT_EXCEPTION.getShadowQualifiedName(), JclException.RUNTIME_EXCEPTION.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.UNSUPPORTED_OPERATION_EXCEPTION.getShadowQualifiedName(), JclException.RUNTIME_EXCEPTION.getShadowQualifiedName(), null));
+//        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.NO_SUCH_ELEMENT_EXCEPTION.getShadowQualifiedName(), JclException.RUNTIME_EXCEPTION.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.BUFFER_UNDERFLOW_EXCEPTION.getShadowQualifiedName(), JclException.RUNTIME_EXCEPTION.getShadowQualifiedName(), null));
+        classInfos.add(PocClassInfo.postRenameInfoFor(false, false, JclException.BUFFER_OVERFLOW_EXCEPTION.getShadowQualifiedName(), JclException.RUNTIME_EXCEPTION.getShadowQualifiedName(), null));
+
+        return classInfos;
+    }
+
+    private static Set<String> allJclExceptions = null;
+
+    public static boolean isJclExceptionType(String className) {
+        if (allJclExceptions == null) {
+            Set<String> exceptions = new HashSet<>(Arrays.asList(CommonGenerators.kExceptionClassNames));
+            exceptions.addAll(CommonGenerators.kHandWrittenExceptionClassNames);
+            exceptions.addAll(CommonGenerators.kLegacyExceptionClassNames);
+            exceptions.add("java.lang.Throwable");  // Missing from the other lists, but definitely an exception.
+            allJclExceptions = exceptions;
+        }
+        return allJclExceptions.contains(className);
+    }
 
     // We don't generate the shadows for these ones since we have hand-written them (but wrappers are still required).
     public static final Set<String> kHandWrittenExceptionClassNames = Set.of(new String[] {
@@ -176,7 +324,7 @@ public class CommonGenerators {
                     .build()
                     .runAndGetBytecode();
             bytecode = new ClassToolchain.Builder(bytecode, ClassReader.EXPAND_FRAMES)
-                    .addNextVisitor(new ArrayWrappingClassAdapterRef())
+                    .addNextVisitor(new ArrayWrappingClassAdapterRef(null, preserveDebuggability))
                     .addNextVisitor(new ArrayWrappingClassAdapter())
                     .addWriter(new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS))
                     .build()

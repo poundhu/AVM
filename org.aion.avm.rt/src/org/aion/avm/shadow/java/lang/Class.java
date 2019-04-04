@@ -129,6 +129,7 @@ public final class Class<T> extends Object implements Serializable {
     }
 
     public String getName() {
+        java.lang.System.out.println(v.getName());
         return new org.aion.avm.shadow.java.lang.String(ClassNameExtractor.getOriginalClassName(v.getName()));
     }
 }

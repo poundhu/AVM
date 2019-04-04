@@ -1,5 +1,6 @@
 package org.aion.avm.arraywrapper;
 
+//TODO -- shouldn't this be a class extending Enum<ArrayElement> ??
 public enum ArrayElement {
 
     // Integral type

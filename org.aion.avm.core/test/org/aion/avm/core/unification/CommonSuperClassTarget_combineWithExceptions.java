@@ -74,9 +74,9 @@ public class CommonSuperClassTarget_combineWithExceptions {
         return flag ? a : root;
     }
 
-    public static Throwable combineApiException(boolean flag, Child1Exception a, ABIException b) {
-        return flag ? a : b;
-    }
+//    public static Throwable combineApiException(boolean flag, Child1Exception a, ABIException b) {
+//        return flag ? a : b;
+//    }
 
     public static Object combineNull(boolean flag, CommonSuperClassTarget_combineWithExceptions a) {
         return flag ? a : null;

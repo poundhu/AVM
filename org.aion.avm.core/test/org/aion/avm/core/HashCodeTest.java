@@ -322,7 +322,7 @@ public class HashCodeTest {
                 .addClass(className, "java.lang.Object", false, raw)
                 .asMutableForest();
 
-        Map<String, byte[]> transformedClasses = DAppCreator.transformClasses(Collections.singletonMap(className, raw), classHierarchy, false);
+        Map<String, byte[]> transformedClasses = DAppCreator.transformClasses(Collections.singletonMap(className, raw), classHierarchy, false, null);
         
         // Note that the class is renamed during this transformation.
         return transformedClasses.get(PackageConstants.kUserDotPrefix + className);

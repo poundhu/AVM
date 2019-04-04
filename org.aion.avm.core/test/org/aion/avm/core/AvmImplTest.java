@@ -93,7 +93,7 @@ public class AvmImplTest {
     @Test
     public void checkMainClassHasProperName() throws IOException {
         byte[] jar = JarBuilder.buildJarForMainAndClasses(MainClass.class);
-        final RawDappModule dappModule = RawDappModule.readFromJar(jar);
+        final RawDappModule dappModule = RawDappModule.readFromJar(jar, false);
         final String mainClassName = MainClass.class.getName();
         assertEquals(mainClassName, dappModule.mainClass);
         Map<String, byte[]> classes = dappModule.classes;

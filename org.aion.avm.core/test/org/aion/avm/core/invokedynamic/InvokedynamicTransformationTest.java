@@ -162,7 +162,7 @@ public class InvokedynamicTransformationTest {
                 .build()
                 .runAndGetBytecode();
         bytecode = new ClassToolchain.Builder(bytecode, ClassReader.EXPAND_FRAMES)
-                .addNextVisitor(new ArrayWrappingClassAdapterRef())
+                .addNextVisitor(new ArrayWrappingClassAdapterRef(null, this.preserveDebuggability))
                 .addNextVisitor(new ArrayWrappingClassAdapter())
                 .addWriter(new TypeAwareClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS, parentPointers))
                 .build()

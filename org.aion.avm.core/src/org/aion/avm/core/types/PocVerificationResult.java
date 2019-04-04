@@ -49,6 +49,22 @@ public class PocVerificationResult {
         return new PocVerificationResult(false, false, false, false, false, true, null, numberOfUnreachableNodes);
     }
 
+    public String getError() {
+        if (this.success) {
+            return "";
+        } else if (this.foundGhost) {
+            return "found a ghost node '" + this.nodeName + "'";
+        } else if (this.foundFinalSuper) {
+            return "found a super class marked final '" + this.nodeName + "'";
+        } else if (this.foundInterfaceWithConcreteSuper) {
+            return "found an interface with a concrete super class '" + this.nodeName + "'";
+        } else if (this.foundMultipleNonInterfaceSupers) {
+            return "found a class with multiple non-interface super classes '" + this.nodeName + "'";
+        } else {
+            return "found " + this.numberOfUnreachableNodes + " unreachable nodes";
+        }
+    }
+
     @Override
     public String toString() {
         if (this.success) {

@@ -28,7 +28,7 @@ public class CommonSuperClassTypes {
     }
 
     public static enum EnumA1 implements RootA, RootB {
-        ;
+        ME;
 
         @Override
         public String getRootA() {
@@ -41,7 +41,7 @@ public class CommonSuperClassTypes {
     }
 
     public static enum EnumA2 implements RootA {
-        ;
+        ME;
 
         @Override
         public String getRootA() {
@@ -50,7 +50,7 @@ public class CommonSuperClassTypes {
     }
 
     public static enum EnumB implements RootA, RootB {
-        ;
+        ME;
 
         @Override
         public String getRootA() {
