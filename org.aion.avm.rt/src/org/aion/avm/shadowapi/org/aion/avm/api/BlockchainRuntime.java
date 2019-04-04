@@ -2,6 +2,7 @@ package org.aion.avm.shadowapi.org.aion.avm.api;
 
 import org.aion.avm.arraywrapper.ByteArray;
 import org.aion.avm.internal.IBlockchainRuntime;
+import org.aion.avm.shadow.java.lang.Object;
 import org.aion.avm.shadow.java.lang.String;
 import org.aion.avm.shadow.java.math.BigInteger;
 
@@ -9,7 +10,7 @@ import org.aion.avm.internal.IInstrumentation;
 import org.aion.avm.RuntimeMethodFeeSchedule;
 
 
-public final class BlockchainRuntime {
+public final class BlockchainRuntime extends Object {
     public static IBlockchainRuntime blockchainRuntime;
 
     private BlockchainRuntime() {

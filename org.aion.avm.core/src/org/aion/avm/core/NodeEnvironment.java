@@ -6,8 +6,10 @@ import org.aion.avm.core.classloading.AvmSharedClassLoader;
 import org.aion.avm.core.dappreading.LoadedJar;
 import org.aion.avm.core.types.ClassHierarchyNode;
 import org.aion.avm.core.types.ClassInfo;
-import org.aion.avm.core.types.Forest;
 import org.aion.avm.core.types.Node;
+import org.aion.avm.core.types.PocClassHierarchy;
+import org.aion.avm.core.types.PocHierarchyVerifier;
+import org.aion.avm.core.types.PocVerificationResult;
 import org.aion.avm.core.util.Helpers;
 import org.aion.avm.internal.*;
 
@@ -43,6 +45,9 @@ public class NodeEnvironment {
     public final Map<String, Integer> apiObjectSizeMap;     // post-rename; API objects
     public final Map<String, Integer> preRenameRuntimeObjectSizeMap;     // pre-rename; runtime objects including shadow objects, exceptions and API objects
     public final Map<String, Integer> postRenameRuntimeObjectSizeMap;    // post-rename; runtime objects including shadow objects, exceptions and API objects
+
+    // The poc class hierarchy; we only ever give away deep copies of this object.
+    private PocClassHierarchy pocHierarchy;
 
     private NodeEnvironment() {
         Map<String, byte[]> generatedShadowJDK = CommonGenerators.generateShadowJDK();
@@ -422,6 +427,14 @@ public class NodeEnvironment {
     }
 
     /**
+     * Returns a deep copy of the shadow JCL & API class hierarchy.
+     */
+    public PocClassHierarchy getPocHierarchy() {
+        RuntimeAssertionError.assertTrue(this.pocHierarchy != null);
+        return this.pocHierarchy.deepCopy();
+    }
+
+    /**
      * Computes the object size of shadow java.base classes
      *
      * @return a mapping between class name and object size
@@ -451,6 +464,14 @@ public class NodeEnvironment {
         ClassHierarchyForest rtClassesForest = null;
         try {
             rtClassesForest = ClassHierarchyForest.createForestFrom(runtimeJar);
+
+            // Testing out that we can construct the shadow JCL and shadow API hierarchy correctly.
+            PocClassHierarchy hierarchy = PocClassHierarchy.createHierarchyFromJarOfPostRenameClasses(runtimeJar);
+            PocHierarchyVerifier verifier = new PocHierarchyVerifier();
+
+            RuntimeAssertionError.assertTrue(verifier.verifyHierarchy(hierarchy).success);
+            this.pocHierarchy = hierarchy;
+
         } catch (IOException e) {
             // If the RT jar being something we can't process, our installation is clearly corrupt.
             throw RuntimeAssertionError.unexpected(e);

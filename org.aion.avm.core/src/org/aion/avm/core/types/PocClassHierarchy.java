@@ -33,88 +33,31 @@ public final class PocClassHierarchy {
 
         } else {
 
-            //TODO: we probably want to construct these elsewhere as separate graphs and just merge them in.
-
-            // In this case we have shadow Object as a child of shadow IObject which is a child of java/lang/Object
-            // and nothing else in the hierarchy.
+            // In this case we have IObject as a child of java/lang/Object and nothing else in the hierarchy.
             PocHierarchyNode shadowIObjectNode = PocHierarchyNode.shadowIObjectNode();
+
             PocHierarchyNode shadowObjectNode = PocHierarchyNode.shadowObjectNode();
 
-            // We also have to add in Enum, which brings in Comparable and Serializable.
-            PocHierarchyNode shadowComparable = PocHierarchyNode.shadowComparableNode();
-            PocHierarchyNode shadowSerializable = PocHierarchyNode.shadowSerializableNode();
-            PocHierarchyNode shadowEnumNode = PocHierarchyNode.shadowEnumNode();
-
-            // We also have to add in RuntimeException, Exception, and Throwable.
-            PocHierarchyNode shadowThrowable = PocHierarchyNode.shadowThrowableNode();
-            PocHierarchyNode shadowException = PocHierarchyNode.shadowExceptionNode();
-            PocHierarchyNode shadowRuntimeException = PocHierarchyNode.shadowRuntimeExceptionNode();
-
             // Set up the parent-child pointers between the object types.
-            shadowObjectNode.addParent(shadowIObjectNode);
             shadowIObjectNode.addParent(javaLangObjectNode);
-            shadowIObjectNode.addChild(shadowObjectNode);
             javaLangObjectNode.addChild(shadowIObjectNode);
-            shadowIObjectNode.addChild(shadowComparable);
-            shadowIObjectNode.addChild(shadowSerializable);
-            shadowComparable.addParent(shadowIObjectNode);
-            shadowSerializable.addParent(shadowIObjectNode);
-            shadowComparable.addChild(shadowEnumNode);
-            shadowSerializable.addChild(shadowEnumNode);
-            shadowObjectNode.addChild(shadowEnumNode);
-            shadowEnumNode.addParent(shadowComparable);
-            shadowEnumNode.addParent(shadowSerializable);
-            shadowEnumNode.addParent(shadowObjectNode);
-            shadowThrowable.addParent(shadowObjectNode);
-            shadowThrowable.addParent(shadowSerializable);
-            shadowObjectNode.addChild(shadowThrowable);
-            shadowSerializable.addChild(shadowThrowable);
-            shadowException.addParent(shadowThrowable);
-            shadowThrowable.addChild(shadowException);
-            shadowRuntimeException.addParent(shadowException);
-            shadowException.addChild(shadowRuntimeException);
+
+            shadowObjectNode.addParent(shadowIObjectNode);
+            shadowIObjectNode.addChild(shadowObjectNode);
 
             // Set the root and add the object types to the map.
             this.root = PocDecoratedNode.decorate(javaLangObjectNode);
             this.nameToNodeMapping.put(this.root.getQualifiedName(), this.root);
             this.nameToNodeMapping.put(shadowIObjectNode.getQualifiedName(), PocDecoratedNode.decorate(shadowIObjectNode));
             this.nameToNodeMapping.put(shadowObjectNode.getQualifiedName(), PocDecoratedNode.decorate(shadowObjectNode));
-            this.nameToNodeMapping.put(shadowComparable.getQualifiedName(), PocDecoratedNode.decorate(shadowComparable));
-            this.nameToNodeMapping.put(shadowSerializable.getQualifiedName(), PocDecoratedNode.decorate(shadowSerializable));
-            this.nameToNodeMapping.put(shadowEnumNode.getQualifiedName(), PocDecoratedNode.decorate(shadowEnumNode));
-            this.nameToNodeMapping.put(shadowThrowable.getQualifiedName(), PocDecoratedNode.decorate(shadowThrowable));
-            this.nameToNodeMapping.put(shadowException.getQualifiedName(), PocDecoratedNode.decorate(shadowException));
-            this.nameToNodeMapping.put(shadowRuntimeException.getQualifiedName(), PocDecoratedNode.decorate(shadowRuntimeException));
         }
     }
 
-    /**
-     * This is an entirely empty hierarchy. It does not even have java/lang/Object in it.
-     *
-     * The purpose of a dangling hierarchy is so that we can go off an construct some other part of
-     * the hierarchy (in a "dangling" state) and then come back and attach it when we're done.
-     */
-    public static PocClassHierarchy createDanglingPostRenameHierarchy() {
-        return new PocClassHierarchy(false);
+    public static PocClassHierarchy createPreRenameHierarchyFromPreRenameJar(LoadedJar loadedJar) {
+        return createHierarchyFromJarOfPreRenameClasses(loadedJar);
     }
 
-    public static PocClassHierarchy createPreRenameHierarchyFrom(LoadedJar loadedJar) {
-        return createHierarchyFromJar(loadedJar, true);
-    }
-
-    public static PocClassHierarchy createPostRenameHierarchyFrom(LoadedJar loadedJar) {
-        return createHierarchyFromJar(loadedJar, false);
-    }
-
-    public static PocClassHierarchy createPreRenameHierarchyFrom(Collection<PocClassInfo> classInfos) {
-        return createHierarchyFrom(classInfos, true);
-    }
-
-    public static PocClassHierarchy createPostRenameHierarchyFrom(Collection<PocClassInfo> classInfos) {
-        return createHierarchyFrom(toPostRenameClassInfos(classInfos), false);
-    }
-
-    private static PocClassHierarchy createHierarchyFromJar(LoadedJar loadedJar, boolean isPreRenameHierarchy) {
+    public static PocClassHierarchy createPostRenameHierarchyFromPreRenameNames(LoadedJar loadedJar) {
         if (loadedJar == null) {
             throw new NullPointerException("Cannot create hierarchy from null jar.");
         }
@@ -123,10 +66,77 @@ public final class PocClassHierarchy {
 
         Map<String, byte[]> classNameToBytes = loadedJar.classBytesByQualifiedNames;
         for (Entry<String, byte[]> classNameToBytesEntry : classNameToBytes.entrySet()) {
-            classInfos.add(getClassInfo(classNameToBytesEntry.getValue()));
+            classInfos.add(getClassInfo(classNameToBytesEntry.getValue(), true));
         }
 
-        return (isPreRenameHierarchy) ? createPreRenameHierarchyFrom(classInfos) : createPostRenameHierarchyFrom(classInfos);
+        return createPostRenameHierarchyFromPostRenameNames(toPostRenameClassInfos(classInfos));
+    }
+
+    public static PocClassHierarchy createPreRenameHierarchyFrom(Collection<PocClassInfo> classInfos) {
+        return createHierarchyFrom(classInfos, true);
+    }
+
+    public static PocClassHierarchy createPostRenameHierarchyFromPreRenameNames(Collection<PocClassInfo> classInfos) {
+        return createHierarchyFrom(toPostRenameClassInfos(classInfos), false);
+    }
+
+    public static PocClassHierarchy createPostRenameHierarchyFromPostRenameNames(Collection<PocClassInfo> classInfos) {
+        return createHierarchyFrom(classInfos, false);
+    }
+
+    public static PocClassHierarchy createHierarchyFromJarOfPreRenameClasses(LoadedJar loadedJar) {
+        if (loadedJar == null) {
+            throw new NullPointerException("Cannot create hierarchy from null jar.");
+        }
+
+        List<PocClassInfo> classInfos = new ArrayList<>();
+
+        Map<String, byte[]> classNameToBytes = loadedJar.classBytesByQualifiedNames;
+        for (Entry<String, byte[]> classNameToBytesEntry : classNameToBytes.entrySet()) {
+            classInfos.add(getClassInfo(classNameToBytesEntry.getValue(), true));
+        }
+
+        return createPreRenameHierarchyFrom(classInfos);
+    }
+
+    public static PocClassHierarchy createHierarchyFromJarOfPostRenameClasses(LoadedJar loadedJar) {
+        if (loadedJar == null) {
+            throw new NullPointerException("Cannot create hierarchy from null jar.");
+        }
+
+        List<PocClassInfo> classInfos = new ArrayList<>();
+
+        Map<String, byte[]> classNameToBytes = loadedJar.classBytesByQualifiedNames;
+        for (Entry<String, byte[]> classNameToBytesEntry : classNameToBytes.entrySet()) {
+
+            String className = classNameToBytesEntry.getKey();
+
+            // Since we are constructing from a post-rename jar, we don't want to re-add any object types.
+            if (!className.equals(PocClassInfo.JAVA_LANG_OBJECT) && !className.equals(PocClassInfo.SHADOW_IOBJECT) && !className.equals(PocClassInfo.SHADOW_OBJECT)) {
+                classInfos.add(getClassInfo(classNameToBytesEntry.getValue(), false));
+            }
+
+        }
+
+        return createPostRenameHierarchyFromPostRenameNames(classInfos);
+    }
+
+    public void appendJarOfPreRenameClasses(LoadedJar loadedJar) {
+        if (loadedJar == null) {
+            throw new NullPointerException("Cannot create hierarchy from null jar.");
+        }
+
+        Map<String, byte[]> classNameToBytes = loadedJar.classBytesByQualifiedNames;
+        for (Entry<String, byte[]> classNameToBytesEntry : classNameToBytes.entrySet()) {
+
+            String className = classNameToBytesEntry.getKey();
+
+            // Do not re-add java/lang/Object.
+            if (!className.equals(PocClassInfo.JAVA_LANG_OBJECT)) {
+                add(getClassInfo(classNameToBytesEntry.getValue(), true).toPostRenameClassInfo());
+            }
+
+        }
     }
 
     private static PocClassHierarchy createHierarchyFrom(Collection<PocClassInfo> classInfos, boolean isPreRenameHierarchy) {
@@ -197,6 +207,49 @@ public final class PocClassHierarchy {
 
     public int size() {
         return this.nameToNodeMapping.size();
+    }
+
+    /**
+     * Note that a deep copy of a hierarchy containing ghost nodes will cause an exception to be
+     * thrown.
+     *
+     * Deep copies should only be made on valid hierarchies that have finished being constructed
+     * (and ideally have been verified by {@link PocHierarchyVerifier}).
+     */
+    public PocClassHierarchy deepCopy() {
+        PocClassHierarchy deepCopy = new PocClassHierarchy(this.isPreRenameHierarchy);
+
+        // Since PocClassInfo is immutable and 'add' creates a tree out of these, we can just re-add
+        // each class info to get the deeply copied hierarchy.
+
+        Collection<PocClassInfo> classInfos = getClassInfosOfAllNodes();
+
+        for (PocClassInfo classInfo : classInfos) {
+
+            // Don't ever re-add java/lang/Object to the hierarchy, nor shadow Object / IObject for post-renaming.
+            if (!classInfo.isJavaLangObject()) {
+
+                if (this.isPreRenameHierarchy || (!classInfo.isShadowIObject() && !classInfo.isShadowObject())) {
+                    deepCopy.add(classInfo);
+                }
+
+            }
+
+        }
+
+        return deepCopy;
+    }
+
+    private Collection<PocClassInfo> getClassInfosOfAllNodes() {
+        Set<PocClassInfo> classInfos = new HashSet<>();
+
+        for (PocDecoratedNode node : this.nameToNodeMapping.values()) {
+            // Ghost nodes don't have associated class info (or they would be a real node).
+            RuntimeAssertionError.assertTrue(!node.isGhostNode());
+            classInfos.add(node.getClassInfo());
+        }
+
+        return classInfos;
     }
 
     /**
@@ -282,17 +335,9 @@ public final class PocClassHierarchy {
      *
      * @param classToAdd The class to add to the hierarchy.
      */
-    private void add(PocClassInfo classToAdd) {
+    public void add(PocClassInfo classToAdd) {
         if (classToAdd == null) {
             throw new NullPointerException("Cannot add a null node to the hierarchy.");
-        }
-
-        // We have some special classes that get added to a post-rename hierarchy right away.
-        // If we come across these again, we just ignore them, since we already have them.
-        String name = classToAdd.selfQualifiedName;
-        if (name.equals(PocClassInfo.SHADOW_ENUM) || name.equals(PocClassInfo.SHADOW_COMPARABLE) || name.equals(PocClassInfo.SHADOW_SERIALIZABLE)
-            || name.equals(PocClassInfo.SHADOW_THROWABLE) || name.equals(PocClassInfo.SHADOW_EXCEPTION) || name.equals(PocClassInfo.SHADOW_RUNTIME_EXCEPTION)) {
-            return;
         }
 
         // Verify we've got the correctly named class in our hands.
@@ -325,7 +370,7 @@ public final class PocClassHierarchy {
             if (!this.isPreRenameHierarchy) {
                 if (superClass.equals(PocClassInfo.JAVA_LANG_OBJECT)) {
                     this.nameToNodeMapping.remove(classToAdd.selfQualifiedName);
-                    throw new IllegalStateException("Attempted to subclass " + PocClassInfo.JAVA_LANG_OBJECT + " in a post-rename hierarchy!");
+                    throw new IllegalStateException("Attempted to subclass " + PocClassInfo.JAVA_LANG_OBJECT + " in a post-rename hierarchy: " + classToAdd.selfQualifiedName);
                 }
             }
 
@@ -373,9 +418,9 @@ public final class PocClassHierarchy {
         }
     }
 
-    private static PocClassInfo getClassInfo(byte[] classBytes) {
+    private static PocClassInfo getClassInfo(byte[] classBytes, boolean isPreRenameHierarchy) {
         ClassReader reader = new ClassReader(classBytes);
-        PocClassVisitor codeVisitor = new PocClassVisitor();
+        PocClassVisitor codeVisitor = new PocClassVisitor(isPreRenameHierarchy);
         reader.accept(codeVisitor, ClassReader.SKIP_FRAMES);
         return codeVisitor.getClassInfo();
     }
@@ -410,6 +455,49 @@ public final class PocClassHierarchy {
                 nodesToVisit.add(child.getQualifiedName());
             }
         }
+    }
+
+    @Override
+    public String toString() {
+        if (this.isPreRenameHierarchy) {
+            return "PocClassHierarchy { pre-rename hierarchy of " + this.nameToNodeMapping.size() + " classes. }";
+        } else {
+            return "PocClassHierarchy { post-rename hierarchy of " + this.nameToNodeMapping.size() + " classes. }";
+        }
+    }
+
+    /**
+     * Returns true only if other is a {@link PocClassHierarchy} and both this and the other
+     * hierarchy are either both pre-rename or both post-rename, and both hierarchies contain the
+     * same set of classes as determined by the class info object associated with each node.
+     *
+     * This equals method does not survery the entire hierarchy, it merely checks that the hierarchy
+     * was built off the same set of class info as the other hierarchy. However, since all construction
+     * of the hierarchy is completely determined by the set of class infos passed into it, this
+     * method should also guarantee the structure of the two hierarchies are equal as well - at
+     * least if both hierarchies have been verified by {@link PocHierarchyVerifier}.
+     */
+    @Override
+    public boolean equals(Object other) {
+        if (!(other instanceof PocClassHierarchy)) {
+            return false;
+        }
+
+        PocClassHierarchy otherHierarchy = (PocClassHierarchy) other;
+        return (this.isPreRenameHierarchy == otherHierarchy.isPreRenameHierarchy)
+            && (this.getClassInfosOfAllNodes().equals(otherHierarchy.getClassInfosOfAllNodes()));
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 17;
+        hash += (this.isPreRenameHierarchy) ? 1 : 0;
+
+        for (PocClassInfo classInfo : this.getClassInfosOfAllNodes()) {
+            hash += classInfo.hashCode();
+        }
+
+        return hash;
     }
 
 }

@@ -13,6 +13,9 @@ import org.aion.avm.internal.RuntimeAssertionError;
  *
  * You can safely assume that all child and parent pointers are to {@link PocHierarchyNode} or
  * {@link PocHierarchyGhostNode} types only.
+ *
+ * The class info pertaining to this node is immutable. However, the lists of parents and children
+ * is not.
  */
 public class PocHierarchyNode implements PocNode {
     private final PocClassInfo classInfo;
@@ -132,6 +135,16 @@ public class PocHierarchyNode implements PocNode {
         return "PocHierarchyNode { " + this.classInfo.rawString() + " }";
     }
 
+    /**
+     * Returns true only if other is a {@link PocHierarchyNode} and its class info is equivalent
+     * to this node's class info.
+     *
+     * Note that this means this node and the other node may have different sets of child and parent
+     * pointers and still be equal. This is because pointers get populated when a node joins a
+     * hierarchy and equals is decoupled from this dependency since what we typically want to know
+     * is whether or not these nodes are talking about the same class as determined by its class
+     * info.
+     */
     @Override
     public boolean equals(Object other) {
         if (!(other instanceof PocHierarchyNode)) {

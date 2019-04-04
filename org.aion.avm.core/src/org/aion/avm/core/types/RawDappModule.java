@@ -3,6 +3,7 @@ package org.aion.avm.core.types;
 import java.util.Map;
 
 import org.aion.avm.core.ClassHierarchyForest;
+import org.aion.avm.core.NodeEnvironment;
 import org.aion.avm.core.dappreading.LoadedJar;
 
 
@@ -25,6 +26,17 @@ public class RawDappModule {
         try {
             LoadedJar loadedJar = LoadedJar.fromBytes(jar);
             ClassHierarchyForest forest = ClassHierarchyForest.createForestFrom(loadedJar);
+
+            // Hierarchy is incomplete because enum & exception don't have real nodes yet. They won't until
+            // we append them to the shadow hierarchy.
+            PocClassHierarchy hierarchy = PocClassHierarchy.createPostRenameHierarchyFromPreRenameNames(loadedJar);
+
+            PocClassHierarchy fullHierarchy = NodeEnvironment.singleton.getPocHierarchy();
+            fullHierarchy.appendJarOfPreRenameClasses(loadedJar);
+
+            PocHierarchyVerifier v = new PocHierarchyVerifier();
+            PocVerificationResult r2 = v.verifyHierarchy(fullHierarchy);
+
             Map<String, byte[]> classes = loadedJar.classBytesByQualifiedNames;
             String mainClass = loadedJar.mainClassName;
             // To be a valid Dapp, this must specify a main class and have at least one class.

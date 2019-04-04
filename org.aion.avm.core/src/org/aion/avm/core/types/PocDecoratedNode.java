@@ -12,6 +12,10 @@ import org.aion.avm.internal.RuntimeAssertionError;
  *
  * A decorated node cannot 'decorate' (wrap) another decorated node. You can always assume the
  * wrapped node is not decorated.
+ *
+ * A decorated node directly exposes the node it wraps and so the immutability of this underlying
+ * node is subject to the immutability guarantees of the wrapped node (typically not immutable), and
+ * the markings on the decorated node are not immutable either.
  */
 public class PocDecoratedNode implements PocNode {
     private PocNode node;

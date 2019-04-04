@@ -2,6 +2,7 @@ package org.aion.avm.core;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -39,19 +40,19 @@ public class PocClassHierarchyTest {
 
 
         // This is here to fake the hierarchy into accepting the circularity.
-        PocClassInfo fakeF = newInterface("F");
+        PocClassInfo fakeF = newPreRenameInterface("F");
 
         // We dangle the cycle off of this parent node because we can't create a cycle off of
         // java/lang/Object.
-        PocClassInfo parent = newInterface("parent");
+        PocClassInfo parent = newPreRenameInterface("parent");
 
         // We create a 6-node cycle.
         PocClassInfo A = newNonFinalClassWithConcreteAndInterfaceSupers("A", parent, fakeF);
-        PocClassInfo B = newNonFinalClassWithConcreteSuper("B", A);
-        PocClassInfo C = newNonFinalClassWithConcreteSuper("C", B);
-        PocClassInfo D = newNonFinalClassWithConcreteSuper("D", C);
-        PocClassInfo E = newNonFinalClassWithConcreteSuper("E", D);
-        PocClassInfo F = newNonFinalClassWithConcreteSuper("F", E);
+        PocClassInfo B = newPreRenameNonFinalClassWithConcreteSuper("B", A);
+        PocClassInfo C = newPreRenameNonFinalClassWithConcreteSuper("C", B);
+        PocClassInfo D = newPreRenameNonFinalClassWithConcreteSuper("D", C);
+        PocClassInfo E = newPreRenameNonFinalClassWithConcreteSuper("E", D);
+        PocClassInfo F = newPreRenameNonFinalClassWithConcreteSuper("F", E);
 
         Collection<PocClassInfo> classInfos = toCollection(parent, A, B, C, D, E, F);
 
@@ -77,122 +78,9 @@ public class PocClassHierarchyTest {
     }
 
     @Test
-    public void testEmptyPostRenameHierarchy() {
-        PocClassHierarchy hierarchy = PocClassHierarchy.createPostRenameHierarchyFrom(Collections.emptyList());
-        assertEquals(9, hierarchy.size());
-
-        PocHierarchyNode root = hierarchy.getRoot();
-        assertFalse(root.isGhostNode());
-        assertTrue(root.getClassInfo().isJavaLangObject());
-        assertEquals(PocHierarchyNode.javaLangObjectNode(), root);
-
-        // Verify that java/lang/Object has 1 child: the shadow IObject class.
-        assertEquals(1, root.getChildren().size());
-        PocNode shadowIObject = root.getChildren().iterator().next();
-        assertEquals(PocHierarchyNode.shadowIObjectNode(), shadowIObject);
-
-        // Verify the shadow IObject class.
-        assertFalse(shadowIObject.isGhostNode());
-        assertTrue(shadowIObject.getClassInfo().isShadowIObject());
-        assertTrue(shadowIObject.getClassInfo().isInterface);
-
-        // Verify the shadow IObject has 1 parent (java/lang/Object) and 3 children (shadow Object/Comparable/Serializable).
-        Collection<PocNode> expectedNodes = new ArrayList<>();
-        expectedNodes.add(PocHierarchyNode.shadowObjectNode());
-        expectedNodes.add(PocHierarchyNode.shadowComparableNode());
-        expectedNodes.add(PocHierarchyNode.shadowSerializableNode());
-
-        assertEquals(1, shadowIObject.getParents().size());
-        assertEquals(root, shadowIObject.getParents().iterator().next());
-        assertEquals(expectedNodes, shadowIObject.getChildren());
-
-        // Verify the shadow Object class. It has 1 parent (shadow IObject) and 2 children (shadow Enum/Throwable).
-        PocNode shadowObject = getNodeByName(PocClassInfo.SHADOW_OBJECT, shadowIObject.getChildren());
-        assertFalse(shadowObject.isGhostNode());
-        assertTrue(shadowObject.getClassInfo().isShadowObject());
-        assertFalse(shadowObject.getClassInfo().isInterface);
-
-        expectedNodes.clear();
-        expectedNodes.add(PocHierarchyNode.shadowEnumNode());
-        expectedNodes.add(PocHierarchyNode.shadowThrowableNode());
-
-        assertEquals(1, shadowObject.getParents().size());
-        assertEquals(shadowIObject, shadowObject.getParents().iterator().next());
-        assertEquals(expectedNodes, shadowObject.getChildren());
-
-        // Verify the shadow Enum class. It has 3 parents (shadow Object, Comparable, Serializable) and no children.
-        expectedNodes.clear();
-        expectedNodes.add(PocHierarchyNode.shadowComparableNode());
-        expectedNodes.add(PocHierarchyNode.shadowSerializableNode());
-        expectedNodes.add(PocHierarchyNode.shadowObjectNode());
-
-        PocNode shadowEnum = getNodeByName(PocClassInfo.SHADOW_ENUM, shadowObject.getChildren());
-        assertFalse(shadowEnum.isGhostNode());
-        assertFalse(shadowEnum.getClassInfo().isInterface);
-
-        assertEquals(expectedNodes, shadowEnum.getParents());
-        assertTrue(shadowEnum.getChildren().isEmpty());
-
-        // Verify the shadow Comparable class. It has 1 parent (IObject) and 1 child (Enum).
-        PocNode shadowComparable = getNodeByName(PocClassInfo.SHADOW_COMPARABLE, shadowEnum.getParents());
-        assertFalse(shadowComparable.isGhostNode());
-        assertTrue(shadowComparable.getClassInfo().isInterface);
-        assertEquals(1, shadowComparable.getParents().size());
-        assertEquals(shadowIObject, shadowComparable.getParents().iterator().next());
-        assertEquals(1, shadowComparable.getChildren().size());
-        assertEquals(shadowEnum, shadowComparable.getChildren().iterator().next());
-
-        // Verify the shadow Serializable class. It has 1 parent (IObject) and 2 children (Enum/Throwable).
-        PocNode shadowSerializable = getNodeByName(PocClassInfo.SHADOW_SERIALIZABLE, shadowEnum.getParents());
-
-        expectedNodes.clear();
-        expectedNodes.add(PocHierarchyNode.shadowEnumNode());
-        expectedNodes.add(PocHierarchyNode.shadowThrowableNode());
-
-        assertFalse(shadowSerializable.isGhostNode());
-        assertTrue(shadowSerializable.getClassInfo().isInterface);
-        assertEquals(1, shadowSerializable.getParents().size());
-        assertEquals(shadowIObject, shadowSerializable.getParents().iterator().next());
-        assertEquals(expectedNodes, shadowSerializable.getChildren());
-
-        // Verify the shadow Throwable class. It has 2 parents (shadow Object/Serializable) and 1 child (shadow Exception).
-        PocNode shadowThrowable = getNodeByName(PocClassInfo.SHADOW_THROWABLE, shadowObject.getChildren());
-
-        expectedNodes.clear();
-        expectedNodes.add(shadowObject);
-        expectedNodes.add(shadowSerializable);
-
-        assertFalse(shadowThrowable.isGhostNode());
-        assertFalse(shadowThrowable.getClassInfo().isInterface);
-        assertEquals(expectedNodes, shadowThrowable.getParents());
-        assertEquals(1, shadowThrowable.getChildren().size());
-        assertEquals(PocHierarchyNode.shadowExceptionNode(), shadowThrowable.getChildren().iterator().next());
-
-        // Verify the shadow Exception class. It has 1 parent (shadow Throwable) and 1 child (shadow RuntimeException).
-        PocNode shadowException = getNodeByName(PocClassInfo.SHADOW_EXCEPTION, shadowThrowable.getChildren());
-        assertFalse(shadowException.isGhostNode());
-        assertFalse(shadowException.getClassInfo().isInterface);
-        assertEquals(1, shadowException.getParents().size());
-        assertEquals(PocHierarchyNode.shadowThrowableNode(), shadowException.getParents().iterator().next());
-        assertEquals(1, shadowException.getChildren().size());
-        assertEquals(PocHierarchyNode.shadowRuntimeExceptionNode(), shadowException.getChildren().iterator().next());
-
-        // Verify the shadow RuntimeException class. It has 1 parent (shadow Exception) and no children.
-        PocNode shadowRuntimeException = getNodeByName(PocClassInfo.SHADOW_RUNTIME_EXCEPTION, shadowException.getChildren());
-        assertFalse(shadowRuntimeException.isGhostNode());
-        assertFalse(shadowRuntimeException.getClassInfo().isInterface);
-        assertEquals(1, shadowRuntimeException.getParents().size());
-        assertEquals(PocHierarchyNode.shadowExceptionNode(), shadowRuntimeException.getParents().iterator().next());
-        assertTrue(shadowRuntimeException.getChildren().isEmpty());
-
-        // Finally, ensure that the verifier recognizes this hierarchy as a valid hierarchy.
-        assertTrue(verifier.verifyHierarchy(hierarchy).success);
-    }
-
-    @Test
     public void testWhenChildHasMultipleInterfaceParents() {
-        PocClassInfo interface1 = newInterface("int1");
-        PocClassInfo interface2 = newInterface("int2");
+        PocClassInfo interface1 = newPreRenameInterface("int1");
+        PocClassInfo interface2 = newPreRenameInterface("int2");
         PocClassInfo child = newNonFinalClassWithConcreteAndInterfaceSupers("child", PocClassInfo.infoForJavaLangObject(), interface1, interface2);
 
         Collection<PocClassInfo> classInfos = toCollection(interface1, interface2, child);
@@ -203,39 +91,47 @@ public class PocClassHierarchyTest {
         // Verify the root node is java/lang/Object
         checkRootIsJavaLangObject(hierarchy);
 
-        // Verify its children are the two interfaces.
+        // Verify its children are the two interfaces and child.
         Collection<PocHierarchyNode> expectedNodes = new ArrayList<>();
         expectedNodes.add(PocHierarchyNode.from(interface1));
         expectedNodes.add(PocHierarchyNode.from(interface2));
+        expectedNodes.add(PocHierarchyNode.from(child));
 
-        Collection<PocNode> interfaces = hierarchy.getRoot().getChildren();
-        assertEquals(2, interfaces.size());
-        assertEquals(expectedNodes, interfaces);
+        Collection<PocNode> childrenOfObject = hierarchy.getRoot().getChildren();
+        assertEquals(expectedNodes, childrenOfObject);
 
-        // Remove the child so we only have the interfaces so that our next code block is easier.
-        interfaces.remove(PocHierarchyNode.from(child));
+        // Verify each 'child' has java/lang/Object as its parent unless it is actually the child node,
+        // in which case it has java/lang/Object and the interfaces as its parent.
+        expectedNodes.clear();
+        expectedNodes.add(PocHierarchyNode.from(interface1));
+        expectedNodes.add(PocHierarchyNode.from(interface2));
+        expectedNodes.add(PocHierarchyNode.from(PocClassInfo.infoForJavaLangObject()));
 
-        // Verify each child interface has java/lang/Object as its parent
-        for (PocNode interfaceNode : interfaces) {
-            Collection<PocNode> parentsOfInterface = interfaceNode.getParents();
-            assertEquals(1, parentsOfInterface.size());
+        for (PocNode childOfObject : childrenOfObject) {
 
-            assertEquals(PocHierarchyNode.javaLangObjectNode(), parentsOfInterface.iterator().next());
+            Collection<PocNode> parentsOfChild = childOfObject.getParents();
+
+            if (childOfObject.getQualifiedName().equals(child.selfQualifiedName)) {
+                assertEquals(expectedNodes, parentsOfChild);
+            } else {
+                assertEquals(1, parentsOfChild.size());
+                assertEquals(PocHierarchyNode.javaLangObjectNode(), parentsOfChild.iterator().next());
+            }
+
         }
 
-        // Reuse the previous expected nodes, now for the child.
-        expectedNodes.remove(PocHierarchyNode.from(child));
+        // Verify the two interfaces have child node as their child and that the child node has no children.
+        for (PocNode childOfObject : childrenOfObject) {
 
-        // Verify each interface has the child class as its only child, and that the child has both
-        // interfaces as its parents.
-        for (PocNode interfaceNode : interfaces) {
-            Collection<PocNode> childrenOfInterface = interfaceNode.getChildren();
-            assertEquals(1, childrenOfInterface.size());
+            Collection<PocNode> childrenOfChild = childOfObject.getChildren();
 
-            PocNode childClass = childrenOfInterface.iterator().next();
+            if (childOfObject.getQualifiedName().equals(child.selfQualifiedName)) {
+                assertTrue(childrenOfChild.isEmpty());
+            } else {
+                assertEquals(1, childrenOfChild.size());
+                assertEquals(PocHierarchyNode.from(child), childrenOfChild.iterator().next());
+            }
 
-            assertEquals(PocHierarchyNode.from(child), childClass);
-            assertEquals(expectedNodes, childClass.getParents());
         }
 
         assertTrue(verifier.verifyHierarchy(hierarchy).success);
@@ -243,8 +139,8 @@ public class PocClassHierarchyTest {
 
     @Test
     public void testWhenChildHasMultipleInterfaceParentsAndOneConcreteParent() {
-        PocClassInfo interface1 = newInterface("int1");
-        PocClassInfo interface2 = newInterface("int2");
+        PocClassInfo interface1 = newPreRenameInterface("int1");
+        PocClassInfo interface2 = newPreRenameInterface("int2");
         PocClassInfo concrete = newNonFinalClass("concrete");
         PocClassInfo child = newNonFinalClassWithConcreteAndInterfaceSupers("child", concrete, interface1, interface2);
 
@@ -292,8 +188,8 @@ public class PocClassHierarchyTest {
     @Test
     public void testWhenConcreteParentHasMultipleChildren() {
         PocClassInfo parent = newNonFinalClass("parent");
-        PocClassInfo child1 = newNonFinalClassWithConcreteSuper("child1", parent);
-        PocClassInfo child2 = newNonFinalClassWithConcreteSuper("child2", parent);
+        PocClassInfo child1 = newPreRenameNonFinalClassWithConcreteSuper("child1", parent);
+        PocClassInfo child2 = newPreRenameNonFinalClassWithConcreteSuper("child2", parent);
 
         Collection<PocClassInfo> classInfos = toCollection(child1, child2, parent);
 
@@ -333,9 +229,9 @@ public class PocClassHierarchyTest {
 
     @Test
     public void testWhenInterfaceParentHasMultipleChildren() {
-        PocClassInfo parent = newInterface("parent");
-        PocClassInfo child1 = newNonFinalClassWithConcreteSuper("child1", parent);
-        PocClassInfo child2 = newNonFinalClassWithConcreteSuper("child2", parent);
+        PocClassInfo parent = newPreRenameInterface("parent");
+        PocClassInfo child1 = newPreRenameNonFinalClassWithConcreteSuper("child1", parent);
+        PocClassInfo child2 = newPreRenameNonFinalClassWithConcreteSuper("child2", parent);
 
         Collection<PocClassInfo> classInfos = toCollection(child1, child2, parent);
 
@@ -376,7 +272,7 @@ public class PocClassHierarchyTest {
     @Test
     public void testWhenChildGetsSecondParent() {
         PocClassInfo parentClass = newNonFinalClass("parentClass");
-        PocClassInfo parentInterface = newInterface("parentInt");
+        PocClassInfo parentInterface = newPreRenameInterface("parentInt");
         PocClassInfo child = newNonFinalClassWithConcreteAndInterfaceSupers("child", parentClass, parentInterface);
 
         // We are going to give the nodes to be constructed in an order so that the parentInterface
@@ -420,8 +316,8 @@ public class PocClassHierarchyTest {
     @Test
     public void testWhenParentGetsSecondChild() {
         PocClassInfo parent = newNonFinalClass("parent");
-        PocClassInfo child1 = newNonFinalClassWithConcreteSuper("child1", parent);
-        PocClassInfo child2 = newNonFinalClassWithConcreteSuper("child2", parent);
+        PocClassInfo child1 = newPreRenameNonFinalClassWithConcreteSuper("child1", parent);
+        PocClassInfo child2 = newPreRenameNonFinalClassWithConcreteSuper("child2", parent);
 
         // We are going to give the nodes to be constructed in an order so that the child2
         // gets added after the parent and child have been (it processes in order).
@@ -465,10 +361,10 @@ public class PocClassHierarchyTest {
 
     @Test
     public void testConstructLinearHierarchy() {
-        PocClassInfo top = newInterface("top");
-        PocClassInfo upperMiddle = newNonFinalClassWithConcreteSuper("upperMiddle", top);
-        PocClassInfo lowerMiddle = newNonFinalClassWithConcreteSuper("lowerMiddle", upperMiddle);
-        PocClassInfo bottom = newNonFinalClassWithConcreteSuper("bottom", lowerMiddle);
+        PocClassInfo top = newPreRenameInterface("top");
+        PocClassInfo upperMiddle = newPreRenameNonFinalClassWithConcreteSuper("upperMiddle", top);
+        PocClassInfo lowerMiddle = newPreRenameNonFinalClassWithConcreteSuper("lowerMiddle", upperMiddle);
+        PocClassInfo bottom = newPreRenameNonFinalClassWithConcreteSuper("bottom", lowerMiddle);
 
         // We construct from the bottom up (with a zig-zag) just to get more coverage over the ghost nodes.
         List<PocClassInfo> classInfos = toList(bottom, lowerMiddle, top, upperMiddle);
@@ -646,9 +542,9 @@ public class PocClassHierarchyTest {
 
     @Test(expected = IllegalStateException.class)
     public void testAddNodeTwice() {
-        PocClassInfo other = newInterface("other");
-        PocClassInfo duplicate1 = newInterfaceWithInterfaceSupers("duplicate", other);
-        PocClassInfo duplicate2 = newInterfaceWithInterfaceSupers("duplicate", other);
+        PocClassInfo other = newPreRenameInterface("other");
+        PocClassInfo duplicate1 = newPreRenameInterfaceWithInterfaceSupers("duplicate", other);
+        PocClassInfo duplicate2 = newPreRenameInterfaceWithInterfaceSupers("duplicate", other);
 
         List<PocClassInfo> classInfos = toList(duplicate1, other, duplicate2);
 
@@ -658,7 +554,7 @@ public class PocClassHierarchyTest {
     @Test
     public void testWhenNodeIsChildOfFinalParent() {
         PocClassInfo finalParent = newFinalClass("final");
-        PocClassInfo child = newNonFinalClassWithConcreteSuper("child", finalParent);
+        PocClassInfo child = newPreRenameNonFinalClassWithConcreteSuper("child", finalParent);
 
         Collection<PocClassInfo> classInfos = toCollection(child, finalParent);
 
@@ -700,8 +596,8 @@ public class PocClassHierarchyTest {
 
     @Test
     public void testWhenNodeIsUnreachable() {
-        PocClassInfo iamabsent = newInterface("iamabsent");
-        PocClassInfo whereami = newInterfaceWithInterfaceSupers("whereami", iamabsent);
+        PocClassInfo iamabsent = newPreRenameInterface("iamabsent");
+        PocClassInfo whereami = newPreRenameInterfaceWithInterfaceSupers("whereami", iamabsent);
 
         Collection<PocClassInfo> classInfos = toCollection(whereami);
 
@@ -715,10 +611,11 @@ public class PocClassHierarchyTest {
 
     @Test
     public void testTightestSuperClassOfTwoJavaLangObjects() {
-        List<PocClassInfo> classInfos = getClassInfosForCommonSuperTests();
+        List<PocClassInfo> classInfos = getPreRenameClassInfosForCommonSuperTests();
 
         PocClassHierarchy hierarchy = PocClassHierarchy.createPreRenameHierarchyFrom(classInfos);
-        assertTrue(verifier.verifyHierarchy(hierarchy).success);
+        PocVerificationResult r = verifier.verifyHierarchy(hierarchy);
+        assertTrue(r.success);
 
         String commonSuper = hierarchy.getTightestCommonSuperClass(PocClassInfo.JAVA_LANG_OBJECT, PocClassInfo.JAVA_LANG_OBJECT);
         assertEquals(PocClassInfo.JAVA_LANG_OBJECT, commonSuper);
@@ -726,7 +623,7 @@ public class PocClassHierarchyTest {
 
     @Test
     public void testTightestSuperClassOfJavaLangObjectAndOther() {
-        List<PocClassInfo> classInfos = getClassInfosForCommonSuperTests();
+        List<PocClassInfo> classInfos = getPreRenameClassInfosForCommonSuperTests();
 
         PocClassHierarchy hierarchy = PocClassHierarchy.createPreRenameHierarchyFrom(classInfos);
         assertTrue(verifier.verifyHierarchy(hierarchy).success);
@@ -741,7 +638,7 @@ public class PocClassHierarchyTest {
 
     @Test
     public void testTightestSuperClassOfTwoOfTheSameClass() {
-        List<PocClassInfo> classInfos = getClassInfosForCommonSuperTests();
+        List<PocClassInfo> classInfos = getPreRenameClassInfosForCommonSuperTests();
 
         PocClassHierarchy hierarchy = PocClassHierarchy.createPreRenameHierarchyFrom(classInfos);
         assertTrue(verifier.verifyHierarchy(hierarchy).success);
@@ -754,7 +651,7 @@ public class PocClassHierarchyTest {
 
     @Test
     public void testTightestSuperClassOfTwoDistinctClasses() {
-        List<PocClassInfo> classInfos = getClassInfosForCommonSuperTests();
+        List<PocClassInfo> classInfos = getPreRenameClassInfosForCommonSuperTests();
 
         PocClassHierarchy hierarchy = PocClassHierarchy.createPreRenameHierarchyFrom(classInfos);
         assertTrue(verifier.verifyHierarchy(hierarchy).success);
@@ -769,7 +666,7 @@ public class PocClassHierarchyTest {
 
     @Test
     public void testTightestSuperClassOfTwoClassesWithDeepLinearAncestries() {
-        List<PocClassInfo> classInfos = getClassInfosForCommonSuperTests();
+        List<PocClassInfo> classInfos = getPreRenameClassInfosForCommonSuperTests();
 
         PocClassHierarchy hierarchy = PocClassHierarchy.createPreRenameHierarchyFrom(classInfos);
         assertTrue(verifier.verifyHierarchy(hierarchy).success);
@@ -785,7 +682,7 @@ public class PocClassHierarchyTest {
 
     @Test
     public void testTightestSuperClassGivenAmbiguousAncestries() {
-        List<PocClassInfo> classInfos = getClassInfosForCommonSuperTests();
+        List<PocClassInfo> classInfos = getPreRenameClassInfosForCommonSuperTests();
 
         PocClassHierarchy hierarchy = PocClassHierarchy.createPreRenameHierarchyFrom(classInfos);
         assertTrue(verifier.verifyHierarchy(hierarchy).success);
@@ -801,7 +698,7 @@ public class PocClassHierarchyTest {
     @Test
     public void testMultipleTightestSuperClassQueries() {
         // This is mainly to test out that the hierarchy cleans itself up properly after each query.
-        List<PocClassInfo> classInfos = getClassInfosForCommonSuperTests();
+        List<PocClassInfo> classInfos = getPreRenameClassInfosForCommonSuperTests();
         PocClassHierarchy hierarchy = PocClassHierarchy.createPreRenameHierarchyFrom(classInfos);
         assertTrue(verifier.verifyHierarchy(hierarchy).success);
 
@@ -839,7 +736,7 @@ public class PocClassHierarchyTest {
      */
     @Test
     public void testVerifierOnCommonSuperHierarchyPermutations() {
-        List<PocClassInfo> classInfos = getClassInfosForCommonSuperTests();
+        List<PocClassInfo> classInfos = getPreRenameClassInfosForCommonSuperTests();
 
         for (int i = 0; i < 100; i++) {
             Collections.shuffle(classInfos);
@@ -851,6 +748,66 @@ public class PocClassHierarchyTest {
         }
     }
 
+    @Test
+    public void testVerifierOnDeepCopyPermutations() {
+        List<PocClassInfo> classInfos = getPostRenameClassInfosForCommonSuperTests();
+
+        for (int i = 0; i < 100; i++) {
+            Collections.shuffle(classInfos);
+            System.out.println("Permutation: " + classInfos);
+
+            // Create a deep copy of the hierarchy and verify it's in tact.
+            PocClassHierarchy copy = PocClassHierarchy.createPostRenameHierarchyFromPostRenameNames(classInfos).deepCopy();
+            assertTrue(verifier.verifyHierarchy(copy).success);
+        }
+    }
+
+    @Test
+    public void testPreRenameDeepCopyDoesNotInfluenceOriginal() {
+        PocClassHierarchy original = PocClassHierarchy.createPreRenameHierarchyFrom(getPreRenameClassInfosForCommonSuperTests());
+        PocClassHierarchy copy = original.deepCopy();
+
+        assertTrue(this.verifier.verifyHierarchy(original).success);
+        assertTrue(this.verifier.verifyHierarchy(copy).success);
+
+        // Verify the copy is equal to the original.
+        assertEquals(original, copy);
+
+        int originalSize = original.size();
+        assertEquals(originalSize, copy.size());
+
+        // We will add a new node to the copy, so its size will differ from the original.
+        PocClassInfo newInterface = newPreRenameInterface("new");
+        copy.add(newInterface);
+
+        assertTrue(this.verifier.verifyHierarchy(copy).success);
+        assertEquals(originalSize + 1, copy.size());
+        assertNotEquals(original, copy);
+    }
+
+    @Test
+    public void testPostRenameDeepCopyDoesNotInfluenceOriginal() {
+        PocClassHierarchy original = PocClassHierarchy.createPostRenameHierarchyFromPostRenameNames(getPostRenameClassInfosForCommonSuperTests());
+        PocClassHierarchy copy = original.deepCopy();
+
+        assertTrue(this.verifier.verifyHierarchy(original).success);
+        assertTrue(this.verifier.verifyHierarchy(copy).success);
+
+        // Verify the copy is equal to the original.
+        assertEquals(original, copy);
+
+        int originalSize = original.size();
+        assertEquals(originalSize, copy.size());
+
+        // We will add a new node to the copy, so its size will differ from the original.
+        PocClassInfo newInterface = newPostRenameInterface("new");
+        copy.add(newInterface);
+
+        assertTrue(this.verifier.verifyHierarchy(copy).success);
+        assertEquals(originalSize + 1, copy.size());
+        assertNotEquals(original, copy);
+    }
+
     //TODO: test immutability
 
     //<-------------------------------------------------------------------------------------------->
@@ -858,8 +815,15 @@ public class PocClassHierarchyTest {
     /**
      * Returns a new interface that descends from java/lang/Object and has no interface super classes.
      */
-    private PocClassInfo newInterface(String name) {
+    private PocClassInfo newPreRenameInterface(String name) {
         return PocClassInfo.preRenameInfoFor(true, false, name, PocClassInfo.JAVA_LANG_OBJECT, null);
+    }
+
+    /**
+     * Returns a new interface that descends from IObject.
+     */
+    private PocClassInfo newPostRenameInterface(String name) {
+        return PocClassInfo.postRenameInfoFor(true, false, name, null, new String[]{ PocClassInfo.SHADOW_IOBJECT });
     }
 
     /**
@@ -872,7 +836,7 @@ public class PocClassHierarchyTest {
         return PocClassInfo.preRenameInfoFor(true, false, name, null, superClass);
     }
 
-    private PocClassInfo newInterfaceWithInterfaceSupers(String name, PocClassInfo... interfaceInfos) {
+    private PocClassInfo newPreRenameInterfaceWithInterfaceSupers(String name, PocClassInfo... interfaceInfos) {
         String[] interfaces = new String[interfaceInfos.length];
 
         for (int i = 0; i < interfaceInfos.length; i++) {
@@ -882,6 +846,18 @@ public class PocClassHierarchyTest {
         }
 
         return PocClassInfo.preRenameInfoFor(true, false, name, null, interfaces);
+    }
+
+    private PocClassInfo newPostRenameInterfaceWithInterfaceSupers(String name, PocClassInfo... interfaceInfos) {
+        String[] interfaces = new String[interfaceInfos.length];
+
+        for (int i = 0; i < interfaceInfos.length; i++) {
+            assertTrue(interfaceInfos[i].isInterface);
+
+            interfaces[i] = interfaceInfos[i].selfQualifiedName;
+        }
+
+        return PocClassInfo.postRenameInfoFor(true, false, name, null, interfaces);
     }
 
     /**
@@ -895,15 +871,19 @@ public class PocClassHierarchyTest {
     /**
      * Returns a new non-final class that descends from superClass and has no interface super classes.
      */
-    private PocClassInfo newNonFinalClassWithConcreteSuper(String name, PocClassInfo superClass) {
+    private PocClassInfo newPreRenameNonFinalClassWithConcreteSuper(String name, PocClassInfo superClass) {
         return PocClassInfo.preRenameInfoFor(false, false, name, superClass.selfQualifiedName, null);
+    }
+
+    private PocClassInfo newPostRenameNonFinalClassWithConcreteSuper(String name, PocClassInfo superClass) {
+        return PocClassInfo.postRenameInfoFor(false, false, name, superClass.selfQualifiedName, null);
     }
 
     /**
      * Returns a new non-final class that descends from java/lang/Object and has the specified
      * interfaces as super classes.
      */
-    private PocClassInfo newNonFinalClassWithInterfaceSupers(String name, PocClassInfo... interfaceInfos) {
+    private PocClassInfo newPreRenameNonFinalClassWithInterfaceSupers(String name, PocClassInfo... interfaceInfos) {
         String[] interfaces = new String[interfaceInfos.length];
 
         for (int i = 0; i < interfaceInfos.length; i++) {
@@ -913,6 +893,18 @@ public class PocClassHierarchyTest {
         }
 
         return PocClassInfo.preRenameInfoFor(false, false, name, null, interfaces);
+    }
+
+    private PocClassInfo newPostRenameNonFinalClassWithInterfaceSupers(String name, PocClassInfo... interfaceInfos) {
+        String[] interfaces = new String[interfaceInfos.length];
+
+        for (int i = 0; i < interfaceInfos.length; i++) {
+            assertTrue(interfaceInfos[i].isInterface);
+
+            interfaces[i] = interfaceInfos[i].selfQualifiedName;
+        }
+
+        return PocClassInfo.postRenameInfoFor(false, false, name, null, interfaces);
     }
 
     /**
@@ -971,26 +963,40 @@ public class PocClassHierarchyTest {
         return PocClassInfo.preRenameInfoFor(false, true, name, superInfo.selfQualifiedName, interfaces);
     }
 
-    private List<PocClassInfo> getClassInfosForCommonSuperTests() {
-        PocClassInfo interface1 = newInterface("int1");
-        PocClassInfo interface2 = newInterface("int2");
-        PocClassInfo interface3 = newInterface("int3");
-        PocClassInfo interface4 = newInterfaceWithInterfaceSupers("int4", interface1);
-        PocClassInfo ambiguousClass1 = newNonFinalClassWithInterfaceSupers("ambiguousClass1", interface2, interface3);
-        PocClassInfo ambiguousClass2 = newNonFinalClassWithInterfaceSupers("ambiguousClass2", interface2, interface3);
-        PocClassInfo commonParentClass = newNonFinalClassWithInterfaceSupers("commonParentClass", interface4);
-        PocClassInfo unambiguousClass1 = newNonFinalClassWithConcreteSuper("unambiguousClass1", commonParentClass);
-        PocClassInfo unambiguousClass2 = newNonFinalClassWithConcreteSuper("unambiguousClass2", commonParentClass);
+    private List<PocClassInfo> getPreRenameClassInfosForCommonSuperTests() {
+        PocClassInfo interface1 = newPreRenameInterface("int1");
+        PocClassInfo interface2 = newPreRenameInterface("int2");
+        PocClassInfo interface3 = newPreRenameInterface("int3");
+        PocClassInfo interface4 = newPreRenameInterfaceWithInterfaceSupers("int4", interface1);
+        PocClassInfo ambiguousClass1 = newPreRenameNonFinalClassWithInterfaceSupers("ambiguousClass1", interface2, interface3);
+        PocClassInfo ambiguousClass2 = newPreRenameNonFinalClassWithInterfaceSupers("ambiguousClass2", interface2, interface3);
+        PocClassInfo commonParentClass = newPreRenameNonFinalClassWithInterfaceSupers("commonParentClass", interface4);
+        PocClassInfo unambiguousClass1 = newPreRenameNonFinalClassWithConcreteSuper("unambiguousClass1", commonParentClass);
+        PocClassInfo unambiguousClass2 = newPreRenameNonFinalClassWithConcreteSuper("unambiguousClass2", commonParentClass);
+
+        return toList(interface1, interface2, interface3, interface4, ambiguousClass1, ambiguousClass2, commonParentClass, unambiguousClass1, unambiguousClass2);
+    }
+
+    private List<PocClassInfo> getPostRenameClassInfosForCommonSuperTests() {
+        PocClassInfo interface1 = newPostRenameInterface("int1");
+        PocClassInfo interface2 = newPostRenameInterface("int2");
+        PocClassInfo interface3 = newPostRenameInterface("int3");
+        PocClassInfo interface4 = newPostRenameInterfaceWithInterfaceSupers("int4", interface1);
+        PocClassInfo ambiguousClass1 = newPostRenameNonFinalClassWithInterfaceSupers("ambiguousClass1", interface2, interface3);
+        PocClassInfo ambiguousClass2 = newPostRenameNonFinalClassWithInterfaceSupers("ambiguousClass2", interface2, interface3);
+        PocClassInfo commonParentClass = newPostRenameNonFinalClassWithInterfaceSupers("commonParentClass", interface4);
+        PocClassInfo unambiguousClass1 = newPostRenameNonFinalClassWithConcreteSuper("unambiguousClass1", commonParentClass);
+        PocClassInfo unambiguousClass2 = newPostRenameNonFinalClassWithConcreteSuper("unambiguousClass2", commonParentClass);
 
         return toList(interface1, interface2, interface3, interface4, ambiguousClass1, ambiguousClass2, commonParentClass, unambiguousClass1, unambiguousClass2);
     }
 
     private List<PocClassInfo> getClassInfosForComplexHierarchy() {
-        PocClassInfo interface1 = newInterface("int1");
-        PocClassInfo interface2 = newInterface("int2");
-        PocClassInfo interface3 = newInterface("int3");
-        PocClassInfo interface4 = newInterfaceWithInterfaceSupers("int4", interface1, interface2);
-        PocClassInfo child1 = newNonFinalClassWithInterfaceSupers("child1", interface1, interface2);
+        PocClassInfo interface1 = newPreRenameInterface("int1");
+        PocClassInfo interface2 = newPreRenameInterface("int2");
+        PocClassInfo interface3 = newPreRenameInterface("int3");
+        PocClassInfo interface4 = newPreRenameInterfaceWithInterfaceSupers("int4", interface1, interface2);
+        PocClassInfo child1 = newPreRenameNonFinalClassWithInterfaceSupers("child1", interface1, interface2);
         PocClassInfo child2 = newFinalClassWithConcreteAndInterfaceSupers("child2", child1, interface4);
 
         return toList(interface1, interface2, interface3, child1, interface4, child2);

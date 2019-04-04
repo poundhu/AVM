@@ -6,9 +6,15 @@ import org.objectweb.asm.Opcodes;
 
 public class PocClassVisitor extends ClassVisitor {
     private PocClassInfo classInfo;
+    private boolean isPreRenameVisitor;
 
-    public PocClassVisitor() {
+    /**
+     * If {@code isPreRenameVisitor == true} then this visitor must be visiting classes that are
+     * already renamed (shadow JCL, API).
+     */
+    public PocClassVisitor(boolean isPreRenameVisitor) {
         super(Opcodes.ASM6);
+        this.isPreRenameVisitor = isPreRenameVisitor;
     }
 
     @Override
@@ -18,7 +24,11 @@ public class PocClassVisitor extends ClassVisitor {
         boolean isInterface = Opcodes.ACC_INTERFACE == (access & Opcodes.ACC_INTERFACE);
         boolean isFinalClass = Opcodes.ACC_FINAL == (access & Opcodes.ACC_FINAL);
 
-        this.classInfo = PocClassInfo.preRenameInfoFor(isInterface, isFinalClass, toQualifiedName(name), parentQualifiedName, interfaceQualifiedNames);
+        if (this.isPreRenameVisitor) {
+            this.classInfo = PocClassInfo.preRenameInfoFor(isInterface, isFinalClass, toQualifiedName(name), parentQualifiedName, interfaceQualifiedNames);
+        } else {
+            this.classInfo = PocClassInfo.postRenameInfoFor(isInterface, isFinalClass, toQualifiedName(name), parentQualifiedName, interfaceQualifiedNames);
+        }
     }
 
     @Override

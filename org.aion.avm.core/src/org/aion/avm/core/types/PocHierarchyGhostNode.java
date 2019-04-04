@@ -16,6 +16,8 @@ import org.aion.avm.internal.RuntimeAssertionError;
  *
  * You can safely assume that all child and parent pointers are to {@link PocHierarchyNode} or
  * {@link PocHierarchyGhostNode} types only.
+ *
+ * The class info for this node is immutable. However, the children list is not.
  */
 public class PocHierarchyGhostNode implements PocNode {
     private final String name;

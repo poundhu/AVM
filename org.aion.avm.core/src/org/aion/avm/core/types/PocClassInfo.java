@@ -4,6 +4,9 @@ import java.util.Arrays;
 import org.aion.avm.internal.PackageConstants;
 import org.aion.avm.internal.RuntimeAssertionError;
 
+/**
+ * This class is immutable.
+ */
 public final class PocClassInfo {
     public static final String JAVA_LANG_OBJECT = "java.lang.Object";
     public static final String SHADOW_IOBJECT = PackageConstants.kInternalDotPrefix + "IObject";
@@ -103,17 +106,14 @@ public final class PocClassInfo {
         if (self == null) {
             throw new NullPointerException("Cannot construct class info with null self.");
         }
-        if (isObjectType(self)) {
-            throw new IllegalArgumentException("Cannot construct class info. Name is reserved: " + self);
-        }
         if ((parent == null) && (interfaces == null)) {
             throw new IllegalArgumentException("Cannot construct class info with no supers at all.");
         }
 
-        // If we detect that the parent class is actually {@value JAVA_LANG_OBJECT}, {@value SHADOW_IOBJECT} or
-        // {@value SHADOW_OBJECT} BUT there are also interface super classes then we will just drop the parent so that
-        // we can simplify the graph and make it less misleading (since the interfaces will eventually hit the root).
-        if (isObjectType(parent) && (interfaces != null) && (interfaces.length > 0)) {
+        // If we have a post-rename interface with java/lang/Object as a parent this is removed (it has IObject as an interface)
+        if (!isPreRenameClass && isInterface && (parent != null) && (parent.equals(JAVA_LANG_OBJECT))) {
+            parent = null;
+        } else if (self.equals(SHADOW_OBJECT)) {
             parent = null;
         }
 

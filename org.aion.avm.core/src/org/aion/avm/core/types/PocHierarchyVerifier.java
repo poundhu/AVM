@@ -8,6 +8,9 @@ public final class PocHierarchyVerifier {
 
     //TODO -- do we need to detect cycles?
 
+    //TODO -- verify pre-rename contains java/lang/Object
+    //TODO -- verify post-rename contains java/lang/Object, IObject, shadow Object
+
     /**
      * Verifies that the specified hierarchy is a valid hierarchy.
      *
