@@ -103,6 +103,7 @@ public class NodeEnvironment {
                     , org.aion.avm.shadow.java.lang.System.class
                     , org.aion.avm.shadow.java.lang.Throwable.class
                     , org.aion.avm.shadow.java.lang.TypeNotPresentException.class
+                    , org.aion.avm.shadow.java.lang.Appendable.class
 
                     , org.aion.avm.shadow.java.lang.invoke.LambdaMetafactory.class
                     , org.aion.avm.shadow.java.lang.invoke.StringConcatFactory.class

@@ -6,8 +6,9 @@ import org.aion.avm.internal.IObject;
 import org.aion.avm.internal.IPersistenceToken;
 import org.aion.avm.internal.RuntimeAssertionError;
 import org.aion.avm.RuntimeMethodFeeSchedule;
+import org.aion.avm.shadow.java.io.Serializable;
 
-public class Boolean extends Object implements Comparable<Boolean> {
+public final class Boolean extends Object implements Serializable, Comparable<Boolean> {
     static {
         // Shadow classes MUST be loaded during bootstrap phase.
         IInstrumentation.attachedThreadInstrumentation.get().bootstrapOnly();

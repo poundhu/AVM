@@ -9,6 +9,7 @@ import org.aion.avm.internal.IObjectDeserializer;
 import org.aion.avm.internal.IObjectSerializer;
 import org.aion.avm.internal.IPersistenceToken;
 import org.aion.avm.RuntimeMethodFeeSchedule;
+import org.aion.avm.shadow.java.io.Serializable;
 
 /**
  * TODO:  Ensure that none of the interface we have provided exposes underlying implementation details (slack buffer space, etc), since we would
@@ -16,7 +17,7 @@ import org.aion.avm.RuntimeMethodFeeSchedule;
  * NOTE:  We may want to develop a policy around when an avm_ method can call another avm_ method since this can result in redundant billing
  * which needs to be part fo the specification.
  */
-public class StringBuilder extends Object implements CharSequence, Appendable{
+public final class StringBuilder extends Object implements CharSequence, Serializable, Appendable{
     static {
         // Shadow classes MUST be loaded during bootstrap phase.
         IInstrumentation.attachedThreadInstrumentation.get().bootstrapOnly();

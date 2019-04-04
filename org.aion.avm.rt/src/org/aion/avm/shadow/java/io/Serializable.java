@@ -1,5 +1,7 @@
 package org.aion.avm.shadow.java.io;
 
-public interface Serializable {
+import org.aion.avm.internal.IObject;
+
+public interface Serializable extends IObject {
 
 }

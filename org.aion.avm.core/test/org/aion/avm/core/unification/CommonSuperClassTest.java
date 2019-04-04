@@ -223,6 +223,6 @@ public class CommonSuperClassTest {
 
         Transaction deployment = Transaction.create(DEPLOYER, KERNEL.getNonce(DEPLOYER), BigInteger.ZERO, txData, ENERGY_LIMIT, ENERGY_PRICE);
         TransactionResult deploymentResult = avm.run(KERNEL, new TransactionContext[] {TransactionContextImpl.forExternalTransaction(deployment, BLOCK)})[0].get();
-        Assert.assertEquals(AvmTransactionResult.Code.SUCCESS, deploymentResult.getResultCode());
+        Assert.assertEquals(AvmTransactionResult.Code.FAILED_REJECTED, deploymentResult.getResultCode());
     }
 }

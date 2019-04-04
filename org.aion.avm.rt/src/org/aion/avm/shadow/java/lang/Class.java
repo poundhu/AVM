@@ -2,7 +2,6 @@ package org.aion.avm.shadow.java.lang;
 
 import org.aion.avm.ClassNameExtractor;
 import org.aion.avm.arraywrapper.ObjectArray;
-import org.aion.avm.internal.AvmException;
 import org.aion.avm.internal.AvmThrowable;
 import org.aion.avm.internal.IInstrumentation;
 import org.aion.avm.internal.IObject;
@@ -13,8 +12,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.aion.avm.RuntimeMethodFeeSchedule;
+import org.aion.avm.shadow.java.io.Serializable;
 
-public class Class<T> extends Object {
+public final class Class<T> extends Object implements Serializable {
     static {
         // Shadow classes MUST be loaded during bootstrap phase.
         IInstrumentation.attachedThreadInstrumentation.get().bootstrapOnly();

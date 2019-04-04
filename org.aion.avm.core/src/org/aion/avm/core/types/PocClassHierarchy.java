@@ -88,6 +88,16 @@ public final class PocClassHierarchy {
         }
     }
 
+    /**
+     * This is an entirely empty hierarchy. It does not even have java/lang/Object in it.
+     *
+     * The purpose of a dangling hierarchy is so that we can go off an construct some other part of
+     * the hierarchy (in a "dangling" state) and then come back and attach it when we're done.
+     */
+    public static PocClassHierarchy createDanglingPostRenameHierarchy() {
+        return new PocClassHierarchy(false);
+    }
+
     public static PocClassHierarchy createPreRenameHierarchyFrom(LoadedJar loadedJar) {
         return createHierarchyFromJar(loadedJar, true);
     }
@@ -162,6 +172,8 @@ public final class PocClassHierarchy {
         if (!this.nameToNodeMapping.containsKey(class2)) {
             throw new IllegalArgumentException("The hierarchy does not contain: " + class2);
         }
+
+        //TODO: optimization - if we encounter other type while visiting ancestors we can return immediately the other type.
 
         // Visit the ancestors of the two starting nodes and mark them differently.
         visitAncestorsAndMarkGreen(class1);
